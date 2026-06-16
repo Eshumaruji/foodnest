@@ -1,0 +1,3 @@
+/:city/:restaurant/owner.html  /owner.html  200
+/:city/:restaurant/owner.html  /owner.html  200!
+/:name/customer.html          /customer.html  200

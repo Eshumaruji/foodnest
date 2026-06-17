@@ -1132,6 +1132,7 @@ async function submitCustomer() {
       role: 'customer',
       name: custName.trim(),
       email: custEmail.trim().toLowerCase(),
+      city: custCity.trim(),
     }));
     const slug = custName.trim().toLowerCase()
   .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'customer';
@@ -1222,9 +1223,16 @@ async function handleLoginResult(result, role, btn) {
     role,
     name: role === 'owner' ? userData.ownerName : userData.name,
     email,
+    city: role === 'customer' ? (userData.city || null) : null,
     photoURL: gUser.photoURL || null
   }));
-
+  sessionStorage.setItem('fn_user', JSON.stringify({
+    id: docRef.id,
+    role: 'customer',
+    name: custName.trim(),
+    email: custEmail.trim().toLowerCase(),
+    city: custCity.trim(),
+  }));
   showToast('✅ Signed in! Redirecting…', 'green');
 
   setTimeout(() => {
@@ -1235,7 +1243,9 @@ async function handleLoginResult(result, role, btn) {
         .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'india';
       window.location.href = `/${city}/${slug}/owner.html`;
     } else {
-      window.location.href = './customer.html';
+      const slug = userData.name.trim().toLowerCase()
+        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'customer';
+      window.location.href = `/${slug}/customer.html`;
     }
   }, 1200);
 }

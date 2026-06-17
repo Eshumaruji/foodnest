@@ -1808,23 +1808,23 @@ function renderOrderCardHtml(order, tables) {
     </div>"
   ).join('');
   const tbl = (tables||[]).find(t=>t.id===order.tableId);
-  return `<div class="order-card ${statusClass}">
-    <div class="order-card-header">
+  return "<div class=\"order-card ${statusClass}\">
+    <div class=\"order-card-header\">
       <div>
-        <div class="order-card-title">🪑 ${tbl?esc(tbl.name):'Table'} · #${order.id.slice(-6).toUpperCase()}</div>
-        <div class="order-card-meta">${new Date(order.placedAt).toLocaleTimeString()} · ${order.items.length} item(s)</div>
+        <div class=\"order-card-title\">🪑 ${tbl?esc(tbl.name):'Table'} · #${order.id.slice(-6).toUpperCase()}</div>
+        <div class=\"order-card-meta\">${new Date(order.placedAt).toLocaleTimeString()} · ${order.items.length} item(s)</div>
       </div>
       ${chip}
     </div>
-    <div class="order-items-list">
+    <div class=\"order-items-list\">
       ${itemRows}
-      <div class="order-total-row"><span>Total</span><span class="price">₹${order.total}</span></div>
+      <div class=\"order-total-row\"><span>Total</span><span class=\"price\">₹${order.total}</span></div>
     </div>
-    <div class="order-actions">
-      ${order.status!=='ready'&&order.kitchenStatus!=='done'?`<button class="btn btn-success btn-sm" data-ready-order="${order.id}">✓ Mark Ready</button>`:''}
-      <button class="btn btn-primary btn-sm" data-bill-order="${order.id}">🧾 ${order.billRequested?'Generate Bill':'View Bill'}</button>
+    <div class=\"order-actions\">
+      ${order.status!=='ready'&&order.kitchenStatus!=='done'?`<button class=\"btn btn-success btn-sm\" data-ready-order=\"${order.id}\">✓ Mark Ready</button>`:''}
+      <button class=\"btn btn-primary btn-sm\" data-bill-order="${order.id}\">🧾 ${order.billRequested?'Generate Bill':'View Bill'}</button>
     </div>
-  </div>`;
+  </div>";
 }
 
 function wireOrderButtons() {

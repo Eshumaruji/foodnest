@@ -1466,11 +1466,8 @@ async function openMenu(restId) {
   
   try {
     const db = window.__db;
-    const q = window.__fsQuery(
-      window.__fsCollection(db, 'menuItems'),
-      window.__fsWhere('restaurantId', '==', restId)
-    );
-    const snap = await window.__fsDocs(q);
+    const menuCol = window.__fsCollection(db, 'menus', restId, 'items');
+    const snap = await window.__fsDocs(menuCol);
     if (snap.empty) {
       document.getElementById('menuSheetBody').innerHTML = `
         <div class="menu-empty">
@@ -1861,12 +1858,9 @@ async function openOrderSheet(bookingId) {
     document.getElementById('orderBackdrop').classList.add('open');
     document.getElementById('orderSheet').classList.add('open');
     
-    // Load menu items
-    const q = window.__fsQuery(
-      window.__fsCollection(db, 'menuItems'),
-      window.__fsWhere('restaurantId', '==', currentOrderBooking.restaurantId)
-    );
-    const snap = await window.__fsDocs(q);
+    // Load menu items — matches owner dashboard's menus/{restaurantId}/items structure
+    const menuCol = window.__fsCollection(db, 'menus', currentOrderBooking.restaurantId, 'items');
+    const snap = await window.__fsDocs(menuCol);
     if (snap.empty) {
       document.getElementById('orderSheetBody').innerHTML = `
         <div class="menu-empty">
@@ -1876,7 +1870,8 @@ async function openOrderSheet(bookingId) {
       return;
     }
     
-    currentMenuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    currentMenuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(d => d.available !== false);
     renderOrderSheet();
   } catch(e) {
     console.error(e);

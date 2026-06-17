@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Aahaar Saathi — Restaurant Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+:root{
+  --saffron:#E8701A;--deep:#C45A0F;--cream:#FDF6EC;--warm:#FFFAF4;
+  --dark:#1C1C1C;--ink:#2D2D2D;--muted:#7A6A5A;--border:#E8D5BF;
+  --success:#27AE60;--arrived:#1A7A4A;--danger:#E53935;--info:#1565C0;
+  --radius:16px;--sm:10px;--shadow:0 4px 24px rgba(232,112,26,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Ubuntu',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:var(--dark);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity 0.6s}
+#splash.hide{opacity:0;pointer-events:none}
+.splash-logo{font-family:'Montserrat',sans-serif;font-weight:900;font-size:2.8rem;color:#fff;letter-spacing:-1px}
+.splash-logo em{color:var(--saffron);font-style:normal}
+.splash-sub{color:#B0A090;font-size:0.9rem;letter-spacing:0.3px}
+.splash-dots{display:flex;gap:7px;margin-top:10px}
+.splash-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.18)}
+.splash-dot:nth-child(1){animation:dotPulse 1.2s 0s infinite}
+.splash-dot:nth-child(2){animation:dotPulse 1.2s 0.2s infinite}
+.splash-dot:nth-child(3){animation:dotPulse 1.2s 0.4s infinite}
+@keyframes dotPulse{0%,80%,100%{background:rgba(255,255,255,0.18)}40%{background:var(--saffron)}}
+
+/* ── HEADER ── */
+header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,0.35)}
+.logo{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.25rem;color:var(--saffron);letter-spacing:-0.5px;cursor:pointer}
+.logo span{color:#fff;font-weight:300}
+.header-right{display:flex;gap:10px;align-items:center}
+.h-badge{background:rgba(232,112,26,0.15);border:1px solid rgba(232,112,26,0.3);color:var(--saffron);border-radius:50px;padding:5px 12px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem}
+.h-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:50px;padding:7px 14px;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.74rem;cursor:pointer;transition:all 0.2s}
+.h-btn:hover{background:rgba(232,112,26,0.2);border-color:rgba(232,112,26,0.4)}
+.h-btn.danger{border-color:rgba(229,57,53,0.4);color:#FF6B6B}
+.h-btn.danger:hover{background:rgba(229,57,53,0.15)}
+
+/* ── OWNER DASHBOARD ── */
+#ownerDash{display:none;min-height:100vh;padding-bottom:60px}
+#ownerDash.show{display:block}
+.dash-tabs{display:flex;background:var(--dark);border-bottom:2px solid rgba(232,112,26,0.2);overflow-x:auto;scrollbar-width:none}
+.dash-tabs::-webkit-scrollbar{display:none}
+.dash-tab{flex-shrink:0;padding:14px 20px;color:#888;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.78rem;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
+.dash-tab.active{color:var(--saffron);border-bottom-color:var(--saffron)}
+.dash-tab:hover:not(.active){color:#ccc}
+.dash-panel{display:none;padding:20px}
+.dash-panel.active{display:block}
+
+/* ── STATS STRIP ── */
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--saffron)}
+.stat-card.green::before{background:var(--success)}
+.stat-card.blue::before{background:var(--info)}
+.stat-card.red::before{background:var(--danger)}
+.stat-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.75rem;color:var(--dark)}
+.stat-label{font-size:0.72rem;color:var(--muted);margin-top:3px}
+
+/* ── SECTION TITLE ── */
+.section-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;color:var(--dark);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title .badge{background:var(--saffron);color:#fff;border-radius:50px;padding:2px 9px;font-size:0.66rem;font-weight:700}
+
+/* ── FORM STYLES ── */
+.form-group{margin-bottom:16px}
+.form-label{display:block;color:var(--muted);font-size:0.72rem;font-family:'Montserrat',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+.form-input,.form-select,.form-textarea{width:100%;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--ink);font-family:'Ubuntu',sans-serif;font-size:0.88rem;outline:none;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--saffron)}
+.form-textarea{resize:vertical;min-height:80px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{border:none;border-radius:50px;padding:11px 20px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--saffron);color:#fff}
+.btn-primary:hover{background:var(--deep)}
+.btn-secondary{background:var(--cream);color:var(--ink);border:1.5px solid var(--border)}
+.btn-secondary:hover{border-color:var(--saffron);color:var(--saffron)}
+.btn-danger{background:#FFF0EE;color:var(--danger);border:1.5px solid #FFD0CC}
+.btn-danger:hover{background:var(--danger);color:#fff}
+.btn-success{background:#E8F5EE;color:var(--success);border:1.5px solid #B8DFC8}
+.btn-success:hover{background:var(--success);color:#fff}
+.btn-warn{background:#FFF8E1;color:#E65100;border:1.5px solid #FFE082}
+.btn-warn:hover{background:#FF6D00;color:#fff}
+.btn-sm{padding:7px 14px;font-size:0.74rem}
+.btn-xs{padding:5px 11px;font-size:0.68rem}
+
+/* ── MENU EDITOR ── */
+.dish-list-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px;transition:box-shadow 0.2s}
+.dish-list-item:hover{box-shadow:var(--shadow)}
+.dish-list-img{width:52px;height:52px;border-radius:8px;background:linear-gradient(135deg,#FFF0E0,#FFE0C0);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;overflow:hidden}
+.dish-list-img img{width:100%;height:100%;object-fit:cover}
+.dish-list-info{flex:1;min-width:0}
+.dish-list-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.88rem;color:var(--dark)}
+.dish-list-meta{font-size:0.72rem;color:var(--muted);margin-top:2px}
+.dish-list-price{font-family:'Montserrat',sans-serif;font-weight:800;color:var(--saffron);font-size:0.95rem;margin-right:10px}
+.dish-list-actions{display:flex;gap:6px;flex-shrink:0}
+.toggle-pill{display:inline-flex;align-items:center;gap:5px;background:#E8F5EE;border:1px solid #B8DFC8;color:var(--success);border-radius:50px;padding:4px 10px;font-size:0.68rem;font-family:'Montserrat',sans-serif;font-weight:700;cursor:pointer;transition:all 0.18s}
+.toggle-pill.off{background:#FFF0EE;border-color:#FFD0CC;color:var(--danger)}
+
+/* ── TABLE MANAGEMENT ── */
+.tables-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.table-card{background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.table-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--border)}
+.table-card.occupied::before{background:var(--saffron)}
+.table-card.ordering::before{background:var(--success);animation:pulse-bar 1.5s ease-in-out infinite}
+.table-card.bill-requested::before{background:var(--danger);animation:pulse-bar 0.8s ease-in-out infinite}
+@keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:0.4}}
+.table-card:hover{border-color:var(--saffron);box-shadow:var(--shadow)}
+.table-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.35rem;color:var(--dark)}
+.table-status{font-size:0.7rem;color:var(--muted);margin-top:2px;font-weight:500}
+.table-status.occ{color:var(--saffron);font-weight:700}
+.table-status.bill{color:var(--danger);font-weight:700}
+.table-status.paid-status{color:var(--success);font-weight:700}
+.table-card.paid::before{background:var(--success)}
+.table-viewers{font-size:0.68rem;color:var(--muted);margin-top:6px}
+.table-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+
+/* ── ORDERS LIVE ── */
+.order-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;transition:box-shadow 0.2s}
+.order-card:hover{box-shadow:var(--shadow)}
+.order-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--saffron)}
+.order-card.paid::before{background:var(--success)}
+.order-card.bill-req::before{background:var(--danger);animation:pulse-bar 1s ease-in-out infinite}
+.order-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
+.order-card-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.9rem;color:var(--dark)}
+.order-card-meta{font-size:0.7rem;color:var(--muted);margin-top:2px}
+.order-status-chip{border-radius:50px;padding:4px 11px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;flex-shrink:0}
+.chip-preparing{background:#FFF8E1;color:#F57F17;border:1px solid #FFE082}
+.chip-ready{background:#E8F5EE;color:var(--success);border:1px solid #B8DFC8}
+.chip-paid{background:#E8F5EE;color:var(--arrived);border:1px solid #B8DFC8}
+.chip-bill{background:#FFF0EE;color:var(--danger);border:1px solid #FFD0CC}
+.chip-kitchen-done{background:#E8F5EE;color:var(--arrived);border:1px solid #B8DFC8}
+.order-items-list{border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
+.order-item-row{display:flex;justify-content:space-between;font-size:0.78rem;padding:3px 0;color:var(--ink)}
+.order-item-row .price{font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)}
+.order-total-row{display:flex;justify-content:space-between;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.88rem;padding-top:8px;border-top:1px solid var(--border);margin-top:6px;color:var(--dark)}
+.order-total-row .price{color:var(--saffron)}
+.order-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.location-chip{display:inline-flex;align-items:center;gap:5px;background:#F0EBE3;color:var(--muted);border:1px solid var(--border);border-radius:50px;padding:4px 10px;font-size:0.68rem;font-family:'Montserrat',sans-serif;font-weight:600;margin-top:6px}
+.location-chip.denied{background:#FFF0EE;color:var(--danger);border-color:#FFD0CC}
+.location-chip.verified{background:#E8F5EE;color:var(--success);border-color:#B8DFC8}
+
+/* ── VIEWER CARD ── */
+.viewer-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.viewer-card.blocked-card{border-color:#FFD0CC;background:#FFFAFA}
+.viewer-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.viewer-id{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.78rem;color:var(--dark)}
+.viewer-time{font-size:0.68rem;color:var(--muted)}
+.viewer-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+
+/* ── BLOCKED LIST ── */
+.blocked-item{background:#fff;border:1px solid #FFD0CC;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.blocked-item-info .blocked-id{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.8rem;color:var(--dark)}
+.blocked-item-info .blocked-meta{font-size:0.68rem;color:var(--muted);margin-top:2px}
+.blocked-badge{background:#FFF0EE;color:var(--danger);border:1px solid #FFD0CC;border-radius:50px;padding:3px 9px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.66rem;flex-shrink:0}
+
+/* ── BILL MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:500;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-sheet{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.93);background:#fff;border-radius:22px;z-index:501;padding:28px;width:min(520px,94vw);max-height:90vh;overflow-y:auto;transition:transform 0.25s}
+.modal-overlay.open .modal-sheet{transform:translate(-50%,-50%) scale(1)}
+.modal-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.2rem;color:var(--dark);margin-bottom:4px}
+.modal-sub{color:var(--muted);font-size:0.78rem;margin-bottom:20px}
+.modal-close{position:absolute;top:16px;right:16px;background:#F0E8DC;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center}
+
+/* ── BILL PREVIEW ── */
+.bill-preview{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;font-family:'Ubuntu',sans-serif}
+.bill-header{text-align:center;border-bottom:2px dashed var(--border);padding-bottom:14px;margin-bottom:14px}
+.bill-header .bill-logo{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.4rem;color:var(--saffron)}
+.bill-header .bill-info{font-size:0.74rem;color:var(--muted);margin-top:4px}
+.bill-row{display:flex;justify-content:space-between;font-size:0.8rem;padding:4px 0;color:var(--ink)}
+.bill-row.total{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.95rem;border-top:1px dashed var(--border);padding-top:10px;margin-top:6px}
+.bill-row.total .price{color:var(--saffron)}
+.bill-tax{color:var(--muted);font-size:0.72rem;padding:2px 0}
+.bill-footer{text-align:center;border-top:2px dashed var(--border);padding-top:14px;margin-top:14px;font-size:0.72rem;color:var(--muted)}
+
+/* ── QR MODAL ── */
+.qr-container{display:flex;flex-direction:column;align-items:center;gap:16px;padding:10px 0}
+.qr-canvas-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;padding:16px}
+.qr-url-box{background:var(--cream);border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'Ubuntu',sans-serif;font-size:0.78rem;color:var(--ink);word-break:break-all;width:100%;text-align:center}
+
+/* ── TABLE DETAIL ── */
+.table-detail-header{background:linear-gradient(135deg,var(--dark),#2D1A0A);border-radius:14px;padding:20px;color:#fff;margin-bottom:16px;position:relative;overflow:hidden}
+.table-detail-header::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23e8701a' fill-opacity='0.07'%3E%3Cpath d='M20 20v-5h-2v5h-5v2h5v5h2v-5h5v-2h-5z'/%3E%3C/g%3E%3C/svg%3E")}
+.table-detail-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:2rem;color:#fff;position:relative}
+.table-detail-num em{color:var(--saffron);font-style:normal}
+.table-detail-sub{color:#B0A090;font-size:0.8rem;position:relative;margin-top:4px}
+
+/* ── HISTORY ── */
+.history-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px}
+.history-icon{width:40px;height:40px;border-radius:10px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.history-info{flex:1;min-width:0}
+.history-title{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.82rem;color:var(--dark)}
+.history-meta{font-size:0.7rem;color:var(--muted);margin-top:2px}
+.history-amount{font-family:'Montserrat',sans-serif;font-weight:800;color:var(--success);font-size:0.9rem}
+
+/* ── CUSTOMER VIEW ── */
+#customerView{display:none;min-height:100vh}
+#customerView.show{display:block}
+.cust-hero{background:linear-gradient(135deg,#1C1C1C 0%,#2D1A0A 55%,#3D2510 100%);padding:26px 20px 22px;position:relative;overflow:hidden}
+.cust-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23e8701a' fill-opacity='0.06'%3E%3Cpath d='M20 20v-5h-2v5h-5v2h5v5h2v-5h5v-2h-5z'/%3E%3C/g%3E%3C/svg%3E")}
+.cust-hero h1{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.55rem;color:#fff;position:relative;line-height:1.2}
+.cust-hero h1 em{color:var(--saffron);font-style:normal}
+.cust-hero p{color:#B0A090;font-size:0.78rem;margin-top:5px;position:relative}
+.table-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(232,112,26,0.15);border:1px solid rgba(232,112,26,0.3);border-radius:50px;padding:5px 12px;color:var(--saffron);font-size:0.74rem;font-family:'Montserrat',sans-serif;font-weight:700;margin-top:10px;position:relative}
+.cust-cart-btn{position:relative;background:var(--saffron);border:none;border-radius:50px;padding:9px 16px;color:#fff;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 0.2s}
+.cust-cart-btn:hover{background:var(--deep)}
+.cart-count{background:#fff;color:var(--saffron);border-radius:50%;width:20px;height:20px;font-size:0.68rem;display:flex;align-items:center;justify-content:center;font-weight:900;transition:transform 0.2s}
+.cart-count.bump{transform:scale(1.4)}
+
+/* ── ORDER READY BANNER ── */
+#orderReadyBanner{display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:600;background:linear-gradient(135deg,#1A7A4A,#27AE60);color:#fff;border-radius:16px;padding:16px 24px;box-shadow:0 8px 32px rgba(27,122,74,0.4);font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.9rem;text-align:center;max-width:90vw;animation:bannerDrop 0.4s cubic-bezier(.4,0,.2,1)}
+#orderReadyBanner.show{display:block}
+@keyframes bannerDrop{from{transform:translateX(-50%) translateY(-20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+#orderReadyBanner .banner-sub{font-size:0.72rem;font-weight:500;opacity:0.9;margin-top:4px}
+#orderReadyBanner .banner-close{position:absolute;top:8px;right:10px;background:rgba(255,255,255,0.2);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center}
+
+/* ── MENU GRID ── */
+.menu-time-tabs{display:flex;gap:8px;padding:14px 20px 8px;overflow-x:auto;scrollbar-width:none;background:var(--warm);border-bottom:1px solid var(--border)}
+.menu-time-tabs::-webkit-scrollbar{display:none}
+.mtt{flex-shrink:0;background:#fff;border:1.5px solid var(--border);border-radius:50px;padding:7px 15px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.73rem;cursor:pointer;color:var(--muted);transition:all 0.18s;white-space:nowrap}
+.mtt.active,.mtt:hover{background:var(--saffron);border-color:var(--saffron);color:#fff}
+.menu-section-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.95rem;color:var(--dark);padding:18px 20px 10px;display:flex;align-items:center;gap:8px}
+.menu-section-title .badge{background:var(--saffron);color:#fff;border-radius:50px;padding:2px 9px;font-size:0.66rem;font-weight:700}
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:13px;padding:0 20px 20px}
+.dish-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;animation:fadeUp 0.4s ease both;position:relative;user-select:none}
+.dish-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.dish-card:active{transform:scale(0.97)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.dish-img-wrap{height:108px;background:linear-gradient(135deg,#FFF0E0,#FFE0C0);display:flex;align-items:center;justify-content:center;font-size:2.6rem;position:relative;overflow:hidden}
+.dish-img-wrap img{width:100%;height:100%;object-fit:cover}
+.cat-badge{position:absolute;top:7px;left:7px;background:var(--dark);color:#fff;font-size:0.58rem;font-family:'Montserrat',sans-serif;font-weight:700;padding:3px 8px;border-radius:50px;text-transform:uppercase}
+.cat-badge.signature{background:var(--saffron)}
+.cat-badge.daily{background:#2E7D5B}
+.cat-badge.festive{background:#8B1A4A}
+.dish-body{padding:9px 10px 11px}
+.dish-name{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--dark);line-height:1.3}
+.dish-footer-row{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.dish-price{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.92rem;color:var(--saffron)}
+.add-btn{width:28px;height:28px;background:var(--saffron);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(232,112,26,0.35);transition:transform 0.15s,background 0.15s}
+.add-btn:hover{background:var(--deep);transform:scale(1.15)}
+
+/* ── CUSTOMER CART ── */
+.cust-cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);z-index:200;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.cust-cart-overlay.open{opacity:1;pointer-events:all}
+.cust-cart-drawer{position:fixed;right:0;top:0;bottom:0;width:min(400px,100vw);background:#fff;z-index:201;transform:translateX(100%);transition:transform 0.3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.cust-cart-drawer.open{transform:translateX(0)}
+.cust-cart-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--warm);flex-shrink:0}
+.cust-cart-header h2{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.05rem;color:var(--dark)}
+.cust-cart-items{flex:1;overflow-y:auto;padding:14px}
+.cust-cart-footer{padding:14px 20px 20px;border-top:1px solid var(--border);background:var(--warm);flex-shrink:0}
+.cust-cart-total{display:flex;justify-content:space-between;margin-bottom:12px;font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.05rem;color:var(--dark)}
+.cust-cart-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F5EDE0}
+.cust-cart-item-img{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#FFF0E0,#FFE0C0);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;overflow:hidden}
+.cust-cart-item-img img{width:100%;height:100%;object-fit:cover}
+.qty-row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.qty-btn{background:var(--cream);border:1px solid var(--border);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:0.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--dark);transition:background 0.15s}
+.qty-btn:hover{background:var(--saffron);color:#fff;border-color:var(--saffron)}
+.qty-num{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;min-width:18px;text-align:center}
+.btn-place-order{width:100%;background:var(--saffron);color:#fff;border:none;border-radius:50px;padding:14px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.88rem;cursor:pointer;transition:background 0.2s;margin-bottom:8px}
+.btn-place-order:hover{background:var(--deep)}
+.btn-place-order:disabled{background:#C8B8A0;cursor:not-allowed}
+.btn-request-bill{width:100%;background:#E8F5EE;color:var(--success);border:1.5px solid #B8DFC8;border-radius:50px;padding:12px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s}
+.btn-request-bill:hover{background:var(--success);color:#fff}
+
+/* ── BLOCKED / DENIED / KICKED SCREENS ── */
+.denied-screen{text-align:center;padding:80px 30px;display:none}
+.denied-screen.show{display:block}
+.denied-icon{font-size:4rem;margin-bottom:16px}
+.denied-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.4rem;color:var(--dark);margin-bottom:8px}
+.denied-sub{color:var(--muted);font-size:0.85rem;max-width:280px;margin:0 auto;line-height:1.6}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--dark);color:#fff;padding:10px 20px;border-radius:50px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:0.78rem;z-index:700;opacity:0;transition:all 0.3s;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,0.3);pointer-events:none;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.green{background:var(--success)}
+.toast.red{background:var(--danger)}
+
+/* ── NOTIFICATION BELL ── */
+.notif-bell{position:relative}
+.notif-dot{position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:var(--danger);border-radius:50%;border:2px solid var(--dark);animation:notif-pulse 1.5s ease-in-out infinite;display:none}
+.notif-dot.show{display:block}
+@keyframes notif-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-state .e-icon{font-size:3rem;margin-bottom:12px}
+.empty-state h3{font-family:'Montserrat',sans-serif;font-weight:700;color:var(--dark);margin-bottom:6px;font-size:1rem}
+
+/* ── TAG INPUT ── */
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:#fff;border:1.5px solid var(--border);border-radius:10px;min-height:42px;align-items:center;cursor:text}
+.tag-input-wrap:focus-within{border-color:var(--saffron)}
+.tag-chip{background:#FFF0E0;color:var(--deep);border:1px solid #F0C898;border-radius:50px;padding:3px 10px;font-size:0.75rem;display:flex;align-items:center;gap:4px;font-family:'Ubuntu',sans-serif}
+.tag-chip button{background:none;border:none;cursor:pointer;color:var(--deep);font-size:0.8rem;padding:0;line-height:1;display:flex;align-items:center}
+.tag-input{border:none;outline:none;font-family:'Ubuntu',sans-serif;font-size:0.88rem;color:var(--ink);background:transparent;flex:1;min-width:80px}
+
+/* ── CHECKBOX ── */
+.check-group{display:flex;flex-wrap:wrap;gap:8px}
+.check-item{display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--border);border-radius:50px;padding:6px 12px;cursor:pointer;transition:all 0.18s;font-size:0.78rem;font-family:'Ubuntu',sans-serif}
+.check-item input{display:none}
+.check-item.checked{background:var(--saffron);border-color:var(--saffron);color:#fff}
+.check-item:hover:not(.checked){border-color:var(--saffron);color:var(--saffron)}
+
+.section-divider{height:1px;background:var(--border);margin:20px 0}
+
+/* ════════════════════════════════════════
+   KITCHEN DISPLAY SCREEN (KDS)
+   ════════════════════════════════════════ */
+#kdsView{display:none;min-height:100vh;background:#0D0D0D;color:#fff}
+#kdsView.show{display:block}
+.kds-header{background:#161616;border-bottom:2px solid #E8701A33;padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.kds-logo{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.1rem;color:var(--saffron)}
+.kds-logo span{color:#777;font-weight:300}
+.kds-clock{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;color:#ddd;letter-spacing:1px}
+.kds-name-badge{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:#888;background:#222;border:1px solid #333;border-radius:50px;padding:4px 12px}
+.kds-body{display:grid;grid-template-columns:1fr 340px;gap:0;min-height:calc(100vh - 58px)}
+.kds-left{padding:20px;border-right:1px solid #222;overflow-y:auto;min-height:calc(100vh - 58px)}
+.kds-right{padding:20px;overflow-y:auto;min-height:calc(100vh - 58px);background:#111}
+.kds-panel-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:0.85rem;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.kds-panel-title .kds-count{background:var(--saffron);color:#fff;border-radius:50px;padding:2px 10px;font-size:0.65rem}
+
+/* KDS Order Card */
+.kds-card{background:#1A1A1A;border:1px solid #2A2A2A;border-radius:14px;padding:16px;margin-bottom:14px;position:relative;overflow:hidden;transition:all 0.3s;animation:kdsSlideIn 0.35s cubic-bezier(.4,0,.2,1)}
+.kds-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--saffron)}
+.kds-card.kds-done{border-color:#1A7A4A44;background:#0D1A12}
+.kds-card.kds-done::before{background:var(--success)}
+.kds-card.kds-exit{animation:kdsSlideOut 0.5s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes kdsSlideIn{from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:none}}
+@keyframes kdsSlideOut{from{opacity:1;transform:none;max-height:400px}to{opacity:0;transform:translateY(-12px) scale(0.95);max-height:0;margin-bottom:0;padding:0}}
+.kds-card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:10px}
+.kds-table-name{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1rem;color:#fff}
+.kds-order-id{font-size:0.65rem;color:#555;margin-top:2px;font-family:'Montserrat',sans-serif;font-weight:700}
+.kds-time-chip{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;background:#2A2A2A;color:#aaa;border-radius:50px;padding:4px 10px;flex-shrink:0}
+.kds-time-chip.urgent{background:#3D1A1A;color:#FF6B6B;animation:pulse-bar 1s infinite}
+
+/* KDS Dish rows */
+.kds-item-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #242424}
+.kds-item-row:last-child{border-bottom:none}
+.kds-item-check{width:24px;height:24px;border-radius:6px;border:2px solid #3A3A3A;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.kds-item-check:hover{border-color:var(--success)}
+.kds-item-check.checked{background:var(--success);border-color:var(--success)}
+.kds-item-check.checked::after{content:'✓';color:#fff;font-size:0.75rem;font-weight:900}
+.kds-item-name{flex:1;font-size:0.85rem;color:#ddd;font-weight:500}
+.kds-item-name.done-item{text-decoration:line-through;color:#555}
+.kds-item-qty{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--saffron);background:#2A1A0A;border-radius:50px;padding:2px 8px}
+
+/* KDS complete overlay */
+.kds-complete-badge{display:none;background:linear-gradient(135deg,#1A7A4A,#27AE60);border-radius:10px;padding:10px 14px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.82rem;color:#fff;text-align:center;margin-top:10px}
+.kds-card.kds-done .kds-complete-badge{display:block}
+
+/* KDS Right panel - table tiles */
+.kds-table-tile{background:#1A1A1A;border:1px solid #2A2A2A;border-radius:12px;padding:14px;margin-bottom:10px}
+.kds-table-tile-head{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.85rem;color:#fff;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.kds-table-tile-head .count-chip{background:#2A2A2A;color:#aaa;border-radius:50px;padding:2px 8px;font-size:0.64rem}
+.kds-table-item{font-size:0.75rem;color:#aaa;padding:3px 0;display:flex;justify-content:space-between}
+.kds-table-item.done{color:#555;text-decoration:line-through}
+.kds-table-item .qty-tag{color:var(--saffron);font-weight:700}
+
+/* KDS items counter progress */
+.kds-progress{margin-top:10px;background:#242424;border-radius:50px;height:4px;overflow:hidden}
+.kds-progress-bar{height:100%;background:var(--saffron);border-radius:50px;transition:width 0.4s}
+.kds-card.kds-done .kds-progress-bar{background:var(--success)}
+
+/* KDS Display list item in owner panel */
+.kds-list-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.kds-list-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#1C1C1C,#333);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.kds-list-info{flex:1}
+.kds-list-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.88rem;color:var(--dark)}
+.kds-list-meta{font-size:0.7rem;color:var(--muted);margin-top:2px;word-break:break-all}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .kds-body{grid-template-columns:1fr;grid-template-rows:auto auto}
+  .kds-right{border-top:1px solid #222;min-height:auto}
+}
+@media(max-width:480px){
+  .form-row{grid-template-columns:1fr}
+  .stats-strip{grid-template-columns:1fr 1fr}
+  .tables-grid{grid-template-columns:1fr 1fr}
+  .menu-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">Aahaar<em>Saathi</em></div>
+  <div class="splash-sub">Restaurant Manager</div>
+  <div class="splash-dots">
+    <div class="splash-dot"></div><div class="splash-dot"></div><div class="splash-dot"></div>
+  </div>
+</div>
+
+<!-- ════════════ OWNER DASHBOARD ════════════ -->
+<div id="ownerDash">
+  <header>
+    <div class="logo" id="logoBtn">Aahaar<span>Saathi</span></div>
+    <div class="header-right">
+      <div id="headerRestName" class="h-badge"></div>
+      <div class="notif-bell">
+        <button class="h-btn" id="orderBellBtn">🔔 Orders</button>
+        <div class="notif-dot" id="notifDot"></div>
+      </div>
+      <button class="h-btn danger" id="logoutBtn">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="dash-tabs">
+    <div class="dash-tab active" id="tab-overview">📊 Overview</div>
+    <div class="dash-tab" id="tab-menu">🍽 Menu</div>
+    <div class="dash-tab" id="tab-tables">🪑 Tables</div>
+    <div class="dash-tab" id="tab-orders">📋 Live Orders</div>
+    <div class="dash-tab" id="tab-kitchen">🧑‍🍳 Kitchen</div>
+    <div class="dash-tab" id="tab-bookings">📅 Bookings</div>
+    <div class="dash-tab" id="tab-history">💰 Bill History</div>
+    <div class="dash-tab" id="tab-blocked">🚫 Blocked</div>
+  </div>
+
+  <div class="dash-panel active" id="panel-overview">
+    <div class="stats-strip" id="overviewStats"></div>
+    <div class="section-title">🔴 Live Activity</div>
+    <div id="liveActivityFeed"></div>
+    <div class="section-title" style="margin-top:20px">📊 Quick Summary</div>
+    <div id="quickSummary"></div>
+  </div>
+
+  <div class="dash-panel" id="panel-menu">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">🍽 Menu Items <span class="badge" id="menuCountBadge">0</span></div>
+      <button class="btn btn-primary btn-sm" id="addDishBtn">+ Add Dish</button>
+    </div>
+    <div id="dishListContainer"></div>
+  </div>
+
+  <div class="dash-panel" id="panel-tables">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">🪑 Tables <span class="badge" id="tableCountBadge">0</span></div>
+      <button class="btn btn-primary btn-sm" id="addTableBtn">+ Add Table</button>
+    </div>
+    <div class="tables-grid" id="tablesGrid"></div>
+  </div>
+
+  <div class="dash-panel" id="panel-orders">
+    <div class="section-title">📋 Live Orders <span class="badge" id="liveOrderCount">0</span></div>
+    <div id="ordersContainer"></div>
+  </div>
+
+  <!-- ── KITCHEN DISPLAYS PANEL ── -->
+  <div class="dash-panel" id="panel-kitchen">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">🧑‍🍳 Kitchen Displays <span class="badge" id="kdsCountBadge">0</span></div>
+      <button class="btn btn-primary btn-sm" id="addKdsBtn">+ Add Kitchen Display</button>
+    </div>
+    <div style="background:linear-gradient(135deg,#1C1C1C,#2D1A0A);border-radius:14px;padding:16px 20px;margin-bottom:20px;color:#fff;display:flex;align-items:center;gap:14px">
+      <div style="font-size:2rem">🖥️</div>
+      <div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.9rem">Kitchen Display System</div>
+        <div style="font-size:0.75rem;color:#B0A090;margin-top:3px;line-height:1.5">Each display shows real-time orders from all tables. Open the link on any screen in the kitchen — no login needed. Kitchen staff can tick off each dish as it's prepared.</div>
+      </div>
+    </div>
+    <div id="kdsListContainer"></div>
+  </div>
+
+  <div class="dash-panel" id="panel-history">
+    <div class="section-title">💰 Paid Bills <span class="badge" id="historyCount">0</span></div>
+    <div id="historyContainer"></div>
+  </div>
+
+  <div class="dash-panel" id="panel-blocked">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">🚫 Blocked Devices <span class="badge" id="blockedCount">0</span></div>
+    </div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;line-height:1.6">
+      Blocked devices cannot open the menu, even with the QR code link.
+    </p>
+    <div id="blockedContainer"></div>
+  </div>
+
+  <div class="dash-panel" id="panel-bookings">
+    <div class="section-title">📅 Advance Bookings <span class="badge" id="bookingsCount">0</span></div>
+    <div id="bookingsContainer"></div>
+  </div>
+</div>
+
+<!-- ════════════ KITCHEN DISPLAY SCREEN (KDS) ════════════ -->
+<div id="kdsView">
+  <div class="kds-header">
+    <div class="kds-logo">Aahaar<span>Saathi</span> <span style="color:var(--saffron);font-size:0.7rem;margin-left:6px;background:#2A1A0A;padding:2px 8px;border-radius:50px">🧑‍🍳 Kitchen</span></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="kds-name-badge" id="kdsDisplayName">Kitchen Display</div>
+      <div class="kds-clock" id="kdsClock">00:00:00</div>
+    </div>
+  </div>
+  <div class="kds-body">
+    <div class="kds-left">
+      <div class="kds-panel-title">ORDER QUEUE <span class="kds-count" id="kdsQueueCount">0</span></div>
+      <div id="kdsOrderQueue"></div>
+    </div>
+    <div class="kds-right">
+      <div class="kds-panel-title">BY TABLE</div>
+      <div id="kdsTableView"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ CUSTOMER VIEW ════════════ -->
+<div id="customerView">
+  <header>
+    <div class="logo">Aahaar<span>Saathi</span></div>
+    <div class="header-right">
+      <button class="cust-cart-btn" id="openCartBtn">
+        🛒 Cart&nbsp;<span class="cart-count" id="custCartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Order Ready Banner -->
+  <div id="orderReadyBanner">
+    <button class="banner-close" id="bannerCloseBtn">✕</button>
+    <div>🎉 Your order is ready!</div>
+    <div class="banner-sub">The kitchen has prepared your food. It'll be with you shortly.</div>
+  </div>
+
+  <div class="cust-hero">
+    <h1>Welcome to<br><em id="custRestName">Our Restaurant</em></h1>
+    <p>Browse our menu and place your order</p>
+    <div class="table-badge" id="custTableBadge">🪑 Table —</div>
+  </div>
+  <div class="menu-time-tabs" id="custTimeTabs">
+    <button class="mtt active" data-slot="all">🍽 All</button>
+    <button class="mtt" data-slot="Breakfast">☕ Breakfast</button>
+    <button class="mtt" data-slot="Lunch">🌤 Lunch</button>
+    <button class="mtt" data-slot="Evening Snack">🌇 Snacks</button>
+    <button class="mtt" data-slot="Dinner">🌙 Dinner</button>
+  </div>
+  <div id="custMenuWrap" style="min-height:60vh;padding-bottom:40px"></div>
+
+  <div class="denied-screen" id="deniedScreen">
+    <div class="denied-icon" id="deniedIcon">🚫</div>
+    <div class="denied-title" id="deniedTitle">Access Restricted</div>
+    <div class="denied-sub" id="deniedSub">The restaurant owner has restricted access.</div>
+  </div>
+
+  <div class="cust-cart-overlay" id="custCartOverlay"></div>
+  <div class="cust-cart-drawer" id="custCartDrawer">
+    <div class="cust-cart-header">
+      <h2>🛒 Your Order</h2>
+      <button style="background:#F0E8DC;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;" id="closeCartBtn">✕</button>
+    </div>
+    <div class="cust-cart-items" id="custCartItems"></div>
+    <div class="cust-cart-footer">
+      <div class="cust-cart-total"><span>Total</span><span id="custCartTotal" style="color:var(--saffron)">₹0</span></div>
+      <button class="btn-place-order" id="custPlaceOrderBtn">Place Order →</button>
+      <button class="btn-request-bill" id="custBillBtn" style="display:none">🧾 Request Bill</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ MODALS ════════════ -->
+<div class="modal-overlay" id="dishModalOverlay">
+  <div class="modal-sheet" id="dishModal">
+    <button class="modal-close" id="closeDishModalBtn">✕</button>
+    <div class="modal-title" id="dishModalTitle">Add New Dish</div>
+    <div class="modal-sub">Fill in the details for the menu item</div>
+    <input type="hidden" id="editDishId"/>
+    <div class="form-group">
+      <label class="form-label">Dish Name *</label>
+      <input class="form-input" id="dishName" placeholder="e.g. Masala Dosa"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Price (₹) *</label>
+        <input class="form-input" id="dishPrice" type="number" placeholder="99"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cook Time</label>
+        <input class="form-input" id="dishCookTime" placeholder="15 mins"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="dishCategory">
+          <option value="regional">Regional</option>
+          <option value="signature">Signature ⭐</option>
+          <option value="daily">Daily Special 📅</option>
+          <option value="festive">Festive 🎉</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Image (emoji or URL)</label>
+        <input class="form-input" id="dishImage" placeholder="🍛 or https://..."/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Available Slots</label>
+      <div class="check-group" id="dishSlotsGroup">
+        <label class="check-item"><input type="checkbox" value="Breakfast"/>☕ Breakfast</label>
+        <label class="check-item"><input type="checkbox" value="Lunch"/>🌤 Lunch</label>
+        <label class="check-item"><input type="checkbox" value="Evening Snack"/>🌇 Evening</label>
+        <label class="check-item"><input type="checkbox" value="Dinner"/>🌙 Dinner</label>
+        <label class="check-item"><input type="checkbox" value="All Day"/>☀️ All Day</label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ingredients (press Enter to add)</label>
+      <div class="tag-input-wrap" id="ingTagWrap">
+        <input id="ingTagInput" class="tag-input" placeholder="Type ingredient + Enter"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" style="flex:1" id="saveDishBtn">Save Dish</button>
+      <button class="btn btn-secondary" id="cancelDishBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tableModalOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeTableModalBtn">✕</button>
+    <div class="modal-title">Add New Table</div>
+    <div class="modal-sub">Create a unique page for this table</div>
+    <div class="form-group">
+      <label class="form-label">Table Name / Number *</label>
+      <input class="form-input" id="tableNameInput" placeholder="e.g. Table 1, Table A, Terrace 3"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Capacity</label>
+      <input class="form-input" id="tableCapacity" type="number" placeholder="4"/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" style="flex:1" id="saveTableBtn">Create Table</button>
+      <button class="btn btn-secondary" id="cancelTableBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- KDS Modal -->
+<div class="modal-overlay" id="kdsModalOverlay">
+  <div class="modal-sheet">
+    <button class="modal-close" id="closeKdsModalBtn">✕</button>
+    <div class="modal-title">Add Kitchen Display</div>
+    <div class="modal-sub">A unique screen link will be generated for your kitchen</div>
+    <div class="form-group">
+      <label class="form-label">Display Name *</label>
+      <input class="form-input" id="kdsNameInput" placeholder="e.g. Main Kitchen, Grill Station"/>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" style="flex:1" id="saveKdsBtn">Create Display</button>
+      <button class="btn btn-secondary" id="cancelKdsBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="qrModalOverlay">
+  <div class="modal-sheet" id="qrModal">
+    <button class="modal-close" id="closeQrBtn">✕</button>
+    <div class="modal-title" id="qrModalTitle">QR Code</div>
+    <div class="modal-sub" id="qrModalSub">Customers scan this to view the menu for this table</div>
+    <div class="qr-container">
+      <div class="qr-canvas-wrap">
+        <canvas id="qrCanvas"></canvas>
+      </div>
+      <div class="qr-url-box" id="qrUrlBox"></div>
+      <div style="display:flex;gap:10px;width:100%">
+        <button class="btn btn-primary" style="flex:1" id="downloadQrBtn">⬇ Download QR</button>
+        <button class="btn btn-secondary" id="copyQrUrlBtn">📋 Copy URL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="cust-cart-overlay" id="dishDetailOverlay" onclick="closeDishDetail()"></div>
+<div class="cust-cart-drawer" id="dishDetailDrawer" style="padding:0">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--warm);flex-shrink:0">
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;color:var(--dark)" id="dishDetailTitle">Dish</div>
+    <button onclick="closeDishDetail()" style="background:#F0E8DC;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--muted)">✕</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:20px" id="dishDetailBody"></div>
+  <div style="padding:14px 20px 24px;border-top:1px solid var(--border);background:var(--warm);flex-shrink:0">
+    <button id="dishDetailAddBtn" class="btn-place-order">+ Add to Cart</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="billModalOverlay">
+  <div class="modal-sheet" id="billModal">
+    <button class="modal-close" id="closeBillBtn">✕</button>
+    <div class="modal-title">Generate Bill</div>
+    <div class="modal-sub">Review and finalize the bill for this order</div>
+    <div id="billPreviewContainer"></div>
+    <div class="form-row" style="margin-bottom:12px">
+      <div class="form-group">
+        <label class="form-label">CGST %</label>
+        <input class="form-input" id="billCgst" type="number" value="2.5" min="0" max="50"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SGST %</label>
+        <input class="form-input" id="billSgst" type="number" value="2.5" min="0" max="50"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-success" style="flex:1" id="markPaidBtn">✓ Mark as Paid & Save</button>
+      <button class="btn btn-secondary" id="cancelBillBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tableDetailOverlay">
+  <div class="modal-sheet" id="tableDetailModal">
+    <button class="modal-close" id="closeTableDetailBtn">✕</button>
+    <div id="tableDetailContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- GAMES MODAL -->
+<div class="modal-overlay" id="gameModalOverlay" style="z-index:300">
+  <div class="modal-sheet" style="max-width:560px;padding:0;overflow:hidden;border-radius:22px">
+    <div style="background:var(--dark);padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:900;color:#fff;font-size:1rem">🎮 Play while you wait!</div>
+      <button onclick="closeGameModal()" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:0.8rem">✕</button>
+    </div>
+    <div id="gamePicker" style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <button onclick="loadGame('sudoku')" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all 0.18s;font-family:'Montserrat',sans-serif;font-weight:700" onmouseover="this.style.borderColor='var(--saffron)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:2rem">🔢</div><div style="margin-top:8px;font-size:0.85rem;color:var(--dark)">Sudoku</div>
+      </button>
+      <button onclick="loadGame('crossword')" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all 0.18s;font-family:'Montserrat',sans-serif;font-weight:700" onmouseover="this.style.borderColor='var(--saffron)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:2rem">📝</div><div style="margin-top:8px;font-size:0.85rem;color:var(--dark)">Food Crossword</div>
+      </button>
+      <button onclick="loadGame('flappy')" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all 0.18s;font-family:'Montserrat',sans-serif;font-weight:700" onmouseover="this.style.borderColor='var(--saffron)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:2rem">🐦</div><div style="margin-top:8px;font-size:0.85rem;color:var(--dark)">Flappy Bird</div>
+      </button>
+      <button onclick="loadGame('minesweeper')" style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all 0.18s;font-family:'Montserrat',sans-serif;font-weight:700" onmouseover="this.style.borderColor='var(--saffron)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:2rem">🌶️</div><div style="margin-top:8px;font-size:0.85rem;color:var(--dark)">Chili Sweeper</div>
+      </button>
+    </div>
+    <div id="gameFrame" style="display:none;width:100%;height:500px;position:relative">
+      <button onclick="backToGamePicker()" style="position:absolute;top:10px;left:10px;z-index:10;background:var(--dark);border:none;color:#fff;border-radius:50px;padding:6px 14px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;cursor:pointer">← Back</button>
+      <canvas id="gameCanvas" style="display:none;width:100%;height:100%"></canvas>
+      <div id="gameHTMLWrap" style="width:100%;height:100%;overflow:auto"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, getDocs, onSnapshot, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDu6WAndsds6PNmTPe7Oq7kFr6-fl8sOe4",
+  authDomain: "aahaarsaathi.firebaseapp.com",
+  projectId: "aahaarsaathi",
+  storageBucket: "aahaarsaathi.firebasestorage.app",
+  messagingSenderId: "673957838336",
+  appId: "1:673957838336:web:44c3a4d2d60f181c4ea2e5",
+  measurementId: "G-V1HBJSPH0G"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const fdb = getFirestore(firebaseApp);
+
+// ── FIRESTORE HELPERS ─────────────────────────────────────────
+function userCol(colName, userId) { return collection(fdb, colName, userId, 'items'); }
+function userDoc(colName, userId, docId) { return doc(fdb, colName, userId, 'items', docId); }
+
+async function getMenu(uid)     { const s=await getDocs(userCol('menus',uid));     return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function saveDishFB(uid,dish)   { await setDoc(userDoc('menus',uid,dish.id),dish); }
+async function deleteDishFB(uid,id)   { await deleteDoc(userDoc('menus',uid,id)); }
+
+async function getTables(uid)   { const s=await getDocs(userCol('tables',uid));    return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function saveTableFB(uid,t)     { await setDoc(userDoc('tables',uid,t.id),t); }
+async function deleteTableFB(uid,id)  { await deleteDoc(userDoc('tables',uid,id)); }
+
+async function getOrders(uid)   { const s=await getDocs(userCol('orders',uid));    return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function saveOrderFB(uid,o)     { await setDoc(userDoc('orders',uid,o.id),o); }
+async function updateOrderFB(uid,id,f){ await updateDoc(userDoc('orders',uid,id),f); }
+
+async function getSessions(uid) { const s=await getDocs(userCol('sessions',uid));  return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function saveSessionFB(uid,s)   { await setDoc(userDoc('sessions',uid,s.sessionId),s); }
+async function updateSessionFB(uid,sid,f){ try{ await updateDoc(userDoc('sessions',uid,sid),f); }catch(_){} }
+async function deleteSessionFB(uid,sid)  { try{ await deleteDoc(userDoc('sessions',uid,sid)); }catch(_){} }
+
+async function getBlocked(uid)  { const s=await getDocs(userCol('blocked',uid));   return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function addBlockFB(uid,entry)  { await setDoc(userDoc('blocked',uid,entry.id),entry); }
+async function removeBlockFB(uid,id)  { await deleteDoc(userDoc('blocked',uid,id)); }
+
+async function getBills(uid)    {
+  const s=await getDocs(userCol('bills',uid));
+  return s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.paidAt-a.paidAt);
+}
+async function saveBillFB(uid,b){ await setDoc(userDoc('bills',uid,b.id),b); }
+
+// KDS helpers
+async function getKdsScreens(uid) { const s=await getDocs(userCol('kdscreens',uid)); return s.docs.map(d=>({id:d.id,...d.data()})); }
+async function saveKdsFB(uid,k)   { await setDoc(userDoc('kdscreens',uid,k.id),k); }
+async function deleteKdsFB(uid,id){ await deleteDoc(userDoc('kdscreens',uid,id)); }
+
+// ── DEVICE FINGERPRINT ────────────────────────────────────────
+function getDeviceFingerprint() {
+  let fp = localStorage.getItem('as_fp');
+  if (!fp) {
+    const raw = [navigator.userAgent,navigator.language,screen.width+'x'+screen.height,screen.colorDepth,new Date().getTimezoneOffset()].join('|');
+    let hash = 5381;
+    for (let i=0;i<raw.length;i++){hash=((hash<<5)+hash)+raw.charCodeAt(i);hash|=0;}
+    fp='fp_'+Math.abs(hash).toString(36)+'_'+Date.now().toString(36);
+    localStorage.setItem('as_fp',fp);
+  }
+  return fp;
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+let currentUser   = null;
+let currentMode   = null;
+let customerState = { tableId:null, restUserId:null, sessionId:null, cart:[], slot:'all', ordersPlaced:false };
+let activeBillOrder=null, billOrderId=null, qrTableId=null, qrIsKds=false;
+let ingTags=[], custDishMenu=[], custActiveSlot='all';
+let unsubOrders=null, unsubSessions=null, unsubBills=null, unsubBlocked=null;
+// KDS state
+let kdsState = { kdsId:null, restUserId:null };
+let unsubKdsOrders=null, kdsOrdersCache=[], kdsTablesCache=[];
+
+// ── BOOT ──────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const session   = JSON.parse(sessionStorage.getItem('fn_user') || 'null');
+  const params    = new URLSearchParams(location.search);
+  const tableParam= params.get('table');
+  const restParam = params.get('rest');
+  const kdsParam  = params.get('kds');
+
+  if (kdsParam && restParam) {
+    currentMode = 'kds';
+    kdsState.kdsId = kdsParam;
+    kdsState.restUserId = restParam;
+  } else if (tableParam && restParam) {
+    currentMode = 'customer';
+    customerState.tableId    = tableParam;
+    customerState.restUserId = restParam;
+    customerState.sessionId  = 'sess_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  }
+
+  setTimeout(() => {
+    const sp = document.getElementById('splash');
+    sp.classList.add('hide');
+    setTimeout(() => sp.remove(), 700);
+    if (currentMode === 'kds') {
+      initKdsView();
+    } else if (currentMode === 'customer') {
+      initCustomerView();
+    } else {
+      if (!session || session.role !== 'owner') { window.location.href = '/index.html'; return; }
+      currentUser = { id: session.id, name: session.name, slug: session.slug||'', city: session.city||'' };
+      showOwnerDash();
+    }
+  }, 1500);
+
+  wireEvents();
+});
+
+// ── WIRE EVENTS ───────────────────────────────────────────────
+function wireEvents() {
+  document.getElementById('logoBtn').addEventListener('click', () => ownerTabSwitch('overview'));
+  document.getElementById('orderBellBtn').addEventListener('click', () => ownerTabSwitch('orders'));
+  document.getElementById('logoutBtn').addEventListener('click', doLogout);
+
+  ['overview','menu','tables','orders','kitchen','history','blocked','bookings'].forEach(tab => {
+    const el = document.getElementById('tab-' + tab);
+    if (el) el.addEventListener('click', () => ownerTabSwitch(tab));
+  });
+
+  document.getElementById('addDishBtn').addEventListener('click', () => openDishModal());
+  document.getElementById('closeDishModalBtn').addEventListener('click', closeDishModal);
+  document.getElementById('cancelDishBtn').addEventListener('click', closeDishModal);
+  document.getElementById('saveDishBtn').addEventListener('click', saveDish);
+  document.getElementById('ingTagInput').addEventListener('keydown', handleTagInput);
+  document.querySelectorAll('#dishSlotsGroup .check-item').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('checked'));
+  });
+
+  document.getElementById('addTableBtn').addEventListener('click', openAddTableModal);
+  document.getElementById('closeTableModalBtn').addEventListener('click', closeTableModal);
+  document.getElementById('cancelTableBtn').addEventListener('click', closeTableModal);
+  document.getElementById('saveTableBtn').addEventListener('click', saveTable);
+
+  // KDS modal
+  document.getElementById('addKdsBtn').addEventListener('click', openAddKdsModal);
+  document.getElementById('closeKdsModalBtn').addEventListener('click', closeKdsModal);
+  document.getElementById('cancelKdsBtn').addEventListener('click', closeKdsModal);
+  document.getElementById('saveKdsBtn').addEventListener('click', saveKds);
+
+  document.getElementById('closeQrBtn').addEventListener('click', closeQrModal);
+  document.getElementById('downloadQrBtn').addEventListener('click', downloadQR);
+  document.getElementById('copyQrUrlBtn').addEventListener('click', copyQrUrl);
+
+  document.getElementById('closeBillBtn').addEventListener('click', closeBillModal);
+  document.getElementById('cancelBillBtn').addEventListener('click', closeBillModal);
+  document.getElementById('markPaidBtn').addEventListener('click', markOrderPaid);
+  document.getElementById('billCgst').addEventListener('input', recalcBill);
+  document.getElementById('billSgst').addEventListener('input', recalcBill);
+  document.getElementById('closeTableDetailBtn').addEventListener('click', closeTableDetail);
+
+  // Customer
+  document.getElementById('openCartBtn').addEventListener('click', openCustCart);
+  document.getElementById('custCartOverlay').addEventListener('click', closeCustCart);
+  document.getElementById('closeCartBtn').addEventListener('click', closeCustCart);
+  document.getElementById('custPlaceOrderBtn').addEventListener('click', custPlaceOrder);
+  document.getElementById('custBillBtn').addEventListener('click', custRequestBill);
+  document.getElementById('bannerCloseBtn').addEventListener('click', () => {
+    document.getElementById('orderReadyBanner').classList.remove('show');
+  });
+
+  document.querySelectorAll('.mtt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.mtt').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      custFilterSlot(btn.dataset.slot);
+    });
+  });
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+function doLogout() {
+  sessionStorage.removeItem('fn_user');
+  [unsubOrders,unsubSessions,unsubBills,unsubBlocked].forEach(u => u && u());
+  window.location.href = '/index.html';
+}
+
+// ── OWNER DASHBOARD ───────────────────────────────────────────
+function showOwnerDash() {
+  document.getElementById('ownerDash').classList.add('show');
+  document.getElementById('headerRestName').textContent = currentUser.name;
+  renderOverview(); renderMenuList(); renderTables(); renderOrders(); renderBookings(); renderHistory(); renderBlocked(); renderKdsList();
+  startOwnerListeners();
+}
+
+function ownerTabSwitch(tab) {
+  document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
+  const tabEl = document.getElementById('tab-' + tab);
+  const panelEl = document.getElementById('panel-' + tab);
+  if (tabEl) tabEl.classList.add('active');
+  if (panelEl) panelEl.classList.add('active');
+  if (tab === 'orders') document.getElementById('notifDot').classList.remove('show');
+}
+
+function startOwnerListeners() {
+  onSnapshot(collection(fdb, 'bookings'), () => renderBookings());
+  unsubOrders   = onSnapshot(userCol('orders',   currentUser.id), () => { renderOrders(); renderOverview(); checkNotifications(); renderTables(); });
+  unsubSessions = onSnapshot(userCol('sessions', currentUser.id), () => { renderTables(); renderOverview(); });
+  unsubBills    = onSnapshot(userCol('bills',    currentUser.id), () => { renderHistory(); renderOverview(); });
+  unsubBlocked  = onSnapshot(userCol('blocked',  currentUser.id), () => renderBlocked());
+}
+
+async function checkNotifications() {
+  const orders = await getOrders(currentUser.id);
+  const hasBillReq = orders.some(o => o.billRequested && o.status !== 'paid');
+  document.getElementById('notifDot').classList.toggle('show', hasBillReq);
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────
+async function renderOverview() {
+  const [menu,tables,orders,sessions,bills] = await Promise.all([
+    getMenu(currentUser.id),getTables(currentUser.id),getOrders(currentUser.id),
+    getSessions(currentUser.id),getBills(currentUser.id)
+  ]);
+  const now = Date.now();
+  const activeSessions = sessions.filter(s=>!s.denied&&!s.kicked&&(now-s.joinedAt)<90000);
+  const pendingOrders  = orders.filter(o=>o.status!=='paid');
+  const todayBills     = bills.filter(b=>new Date(b.paidAt).toDateString()===new Date().toDateString());
+  const todayRevenue   = todayBills.reduce((s,b)=>s+b.total,0);
+
+  document.getElementById('overviewStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${activeSessions.length}</div><div class="stat-label">👥 Live Viewers</div></div>
+    <div class="stat-card"><div class="stat-num">${pendingOrders.length}</div><div class="stat-label">📋 Pending Orders</div></div>
+    <div class="stat-card green"><div class="stat-num">₹${todayRevenue}</div><div class="stat-label">💰 Today's Revenue</div></div>
+    <div class="stat-card blue"><div class="stat-num">${menu.length}</div><div class="stat-label">🍽 Menu Items</div></div>
+  `;
+
+  const liveItems = activeSessions.slice(0,5).map(s=>{
+    const tbl=tables.find(t=>t.id===s.tableId);
+    return `<div class="history-item"><div class="history-icon">🪑</div><div class="history-info"><div class="history-title">${tbl?esc(tbl.name):'Unknown Table'}</div><div class="history-meta">Session: ${s.sessionId.slice(0,12)}… · ${timeAgo(s.joinedAt)}</div></div><span style="color:var(--success);font-size:0.7rem;font-weight:700;flex-shrink:0">● LIVE</span></div>`;
+  }).join('');
+
+  document.getElementById('liveActivityFeed').innerHTML = liveItems ||
+    `<div class="empty-state"><div class="e-icon">👀</div><h3>No live viewers</h3><p>Customers will appear here when they open a table link</p></div>`;
+
+  const billReqs = orders.filter(o=>o.billRequested&&o.status!=='paid');
+  document.getElementById('quickSummary').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="stat-card red"><div class="stat-num">${billReqs.length}</div><div class="stat-label">🧾 Bill Requests</div></div>
+      <div class="stat-card"><div class="stat-num">${tables.length}</div><div class="stat-label">🪑 Total Tables</div></div>
+    </div>`;
+}
+
+// ── MENU EDITOR ───────────────────────────────────────────────
+async function renderMenuList() {
+  const menu = await getMenu(currentUser.id);
+  document.getElementById('menuCountBadge').textContent = menu.length;
+  if (!menu.length) {
+    document.getElementById('dishListContainer').innerHTML =
+      `<div class="empty-state"><div class="e-icon">🍽</div><h3>No dishes yet</h3><p>Add your first dish to get started</p></div>`;
+    return;
+  }
+  document.getElementById('dishListContainer').innerHTML = menu.map(dish => {
+    const isEmoji = dish.image && dish.image.length <= 4;
+    const imgHtml = isEmoji
+      ? `<div style="font-size:1.6rem;display:flex;align-items:center;justify-content:center;height:100%">${dish.image||'🍛'}</div>`
+      : `<img src="${dish.image}" style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML='<div style=font-size:1.6rem>🍛</div>'"/>`;
+    return `<div class="dish-list-item">
+      <div class="dish-list-img">${imgHtml}</div>
+      <div class="dish-list-info">
+        <div class="dish-list-name">${esc(dish.name)}</div>
+        <div class="dish-list-meta">${dish.category} · ${dish.cookTime||'—'} · ${(dish.availableSlots||[]).join(', ')||'All time'}</div>
+      </div>
+      <div class="dish-list-price">₹${dish.price}</div>
+      <div class="dish-list-actions">
+        <button class="toggle-pill ${dish.available!==false?'':'off'}" data-toggle-dish="${dish.id}">${dish.available!==false?'✓ On':'✕ Off'}</button>
+        <button class="btn btn-secondary btn-xs" data-edit-dish="${dish.id}">Edit</button>
+        <button class="btn btn-danger btn-xs" data-del-dish="${dish.id}">Del</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('[data-toggle-dish]').forEach(btn => btn.addEventListener('click', () => toggleDishAvail(btn.dataset.toggleDish)));
+  document.querySelectorAll('[data-edit-dish]').forEach(btn => btn.addEventListener('click', () => openDishModal(btn.dataset.editDish)));
+  document.querySelectorAll('[data-del-dish]').forEach(btn => btn.addEventListener('click', () => deleteDish(btn.dataset.delDish)));
+}
+
+async function toggleDishAvail(id) {
+  const menu = await getMenu(currentUser.id);
+  const dish = menu.find(d => d.id === id);
+  if (!dish) return;
+  dish.available = dish.available === false;
+  await saveDishFB(currentUser.id, dish);
+  renderMenuList();
+}
+
+async function deleteDish(id) {
+  if (!confirm('Delete this dish?')) return;
+  await deleteDishFB(currentUser.id, id);
+  renderMenuList(); showToast('Dish deleted');
+}
+
+function handleTagInput(e) {
+  if (e.key==='Enter'||e.key===',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/,'');
+    if (!val) return;
+    ingTags.push(val); e.target.value=''; renderTagWrap();
+  }
+}
+function renderTagWrap() {
+  const wrap = document.getElementById('ingTagWrap');
+  const input = document.getElementById('ingTagInput');
+  wrap.innerHTML = ingTags.map((t,i) => `<span class="tag-chip">${esc(t)}<button type="button" data-tag-idx="${i}">×</button></span>`).join('');
+  wrap.appendChild(input);
+  wrap.querySelectorAll('[data-tag-idx]').forEach(btn =>
+    btn.addEventListener('click', () => { ingTags.splice(parseInt(btn.dataset.tagIdx),1); renderTagWrap(); }));
+}
+
+async function openDishModal(id) {
+  ingTags = [];
+  ['dishName','dishPrice','dishCookTime','dishImage','editDishId'].forEach(f => document.getElementById(f).value='');
+  document.getElementById('dishCategory').value = 'regional';
+  document.querySelectorAll('#dishSlotsGroup .check-item').forEach(el => el.classList.remove('checked'));
+  renderTagWrap();
+  if (id) {
+    const menu = await getMenu(currentUser.id);
+    const dish = menu.find(d => d.id === id);
+    if (dish) {
+      document.getElementById('editDishId').value = id;
+      document.getElementById('dishModalTitle').textContent = 'Edit Dish';
+      document.getElementById('dishName').value = dish.name;
+      document.getElementById('dishPrice').value = dish.price;
+      document.getElementById('dishCookTime').value = dish.cookTime||'';
+      document.getElementById('dishImage').value = dish.image||'';
+      document.getElementById('dishCategory').value = dish.category||'regional';
+      (dish.availableSlots||[]).forEach(slot => {
+        document.querySelectorAll('#dishSlotsGroup .check-item').forEach(el => {
+          if (el.querySelector('input').value===slot) el.classList.add('checked');
+        });
+      });
+      ingTags = [...(dish.ingredients||[])]; renderTagWrap();
+    }
+  } else {
+    document.getElementById('dishModalTitle').textContent = 'Add New Dish';
+  }
+  document.getElementById('dishModalOverlay').classList.add('open');
+}
+function closeDishModal() { document.getElementById('dishModalOverlay').classList.remove('open'); }
+
+async function saveDish() {
+  const name  = document.getElementById('dishName').value.trim();
+  const price = parseFloat(document.getElementById('dishPrice').value);
+  if (!name||!price) { showToast('Name and price are required'); return; }
+  const editId = document.getElementById('editDishId').value;
+  const slots = [];
+  document.querySelectorAll('#dishSlotsGroup .check-item.checked').forEach(el => slots.push(el.querySelector('input').value));
+  const dish = {
+    id: editId||'dish_'+Date.now(), name, price,
+    cookTime: document.getElementById('dishCookTime').value.trim(),
+    image: document.getElementById('dishImage').value.trim()||'🍛',
+    category: document.getElementById('dishCategory').value,
+    availableSlots: slots, ingredients: [...ingTags], available: true, createdAt: Date.now()
+  };
+  if (!ingTags.length) {
+    try {
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:`List the basic ingredients of "${name}" as a JSON array of strings (max 8 items). Just the array, no text.`}]})});
+      const data = await resp.json();
+      const raw = data.choices[0].message.content.trim();
+      const parsed = JSON.parse(raw.match(/\[.*\]/s)[0]);
+      ingTags = parsed.map(String); renderTagWrap();
+      showToast('🌿 Ingredients auto-filled from AI!','green');
+    } catch(_) {}
+  }
+  await saveDishFB(currentUser.id, dish);
+  closeDishModal(); renderMenuList();
+  showToast(editId?'Dish updated!':'Dish added!','green');
+}
+
+// ── TABLES ────────────────────────────────────────────────────
+async function renderTables() {
+  const [tables,sessions,orders] = await Promise.all([getTables(currentUser.id),getSessions(currentUser.id),getOrders(currentUser.id)]);
+  document.getElementById('tableCountBadge').textContent = tables.length;
+  if (!tables.length) {
+    document.getElementById('tablesGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="e-icon">🪑</div><h3>No tables yet</h3></div>';
+    return;
+  }
+  const now = Date.now();
+  document.getElementById('tablesGrid').innerHTML = tables.map(t => {
+    const tSessions    = sessions.filter(s=>s.tableId===t.id&&(now-s.joinedAt)<90000&&!s.denied&&!s.kicked);
+    const tableOrders  = orders.filter(o=>o.tableId===t.id);
+    const unpaidOrders = tableOrders.filter(o=>o.status!=='paid');
+    const paidOrders   = tableOrders.filter(o=>o.status==='paid');
+    const hasBillReq   = unpaidOrders.some(o=>o.billRequested);
+    const hasOrders    = unpaidOrders.length > 0;
+    const recentlyPaid = paidOrders.length > 0 && unpaidOrders.length === 0 && tSessions.length === 0;
+    const occupied     = tSessions.length > 0;
+
+    const statusClass= recentlyPaid?'':'(hasBillReq?\'bill-requested\':(hasOrders?\'ordering\':(occupied?\'occupied\':\'\')))'
+    
+    return `<div class="table-card ${statusClass}" data-open-table="${t.id}">
+      <div class="table-num">🪑 ${esc(t.name)}</div>
+      <div class="table-status ${statusColor}">${statusText}</div>
+      ${t.capacity?`<div class="table-viewers">Capacity: ${t.capacity}</div>`:''}
+      <div class="table-card-actions">
+        <button class="btn btn-secondary btn-xs" data-qr-table="${t.id}">📱 QR</button>
+        <button class="btn btn-secondary btn-xs" data-copy-table="${t.id}">🔗 Link</button>
+        <button class="btn btn-danger btn-xs" data-del-table="${t.id}">Del</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('[data-open-table]').forEach(card =>
+    card.addEventListener('click', e => { if(!e.target.closest('button')) openTableDetail(card.dataset.openTable); }));
+  document.querySelectorAll('[data-qr-table]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); openQrModal(btn.dataset.qrTable, false); }));
+  document.querySelectorAll('[data-copy-table]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); copyTableUrl(btn.dataset.copyTable); }));
+  document.querySelectorAll('[data-del-table]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); deleteTable(btn.dataset.delTable); }));
+}
+
+function openAddTableModal() {
+  document.getElementById('tableNameInput').value='';
+  document.getElementById('tableCapacity').value='';
+  document.getElementById('tableModalOverlay').classList.add('open');
+}
+function closeTableModal() { document.getElementById('tableModalOverlay').classList.remove('open'); }
+
+async function saveTable() {
+  const name = document.getElementById('tableNameInput').value.trim();
+  if (!name) { showToast('Enter a table name'); return; }
+  const slug  = name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const table = { id:'tbl_'+slug+'_'+Date.now(), name, capacity:parseInt(document.getElementById('tableCapacity').value)||0, createdAt:Date.now() };
+  await saveTableFB(currentUser.id, table);
+  closeTableModal(); renderTables();
+  showToast(`Table "${name}" created!`,'green');
+}
+
+async function deleteTable(id) {
+  if (!confirm('Delete this table?')) return;
+  await deleteTableFB(currentUser.id, id);
+  renderTables(); showToast('Table deleted');
+}
+
+function getTableUrl(userId, tableId) { return `${location.origin}${location.pathname}?rest=${userId}&table=${tableId}`; }
+function getKdsUrl(userId, kdsId)     { return `${location.origin}${location.pathname}?rest=${userId}&kds=${kdsId}`; }
+
+function copyTableUrl(tableId) {
+  navigator.clipboard.writeText(getTableUrl(currentUser.id, tableId)).then(() => showToast('Link copied!','green'));
+}
+
+function openQrModal(id, isKds) {
+  qrTableId = id; qrIsKds = isKds;
+  const urlFn = isKds ? getKdsUrl : getTableUrl;
+  const label  = isKds ? 'Display' : 'Table';
+
+  let nameProm;
+  if (isKds) {
+    nameProm = getKdsScreens(currentUser.id).then(list => { const k=list.find(x=>x.id===id); return k?k.name:id; });
+  } else {
+    nameProm = getTables(currentUser.id).then(list => { const t=list.find(x=>x.id===id); return t?t.name:id; });
+  }
+
+  nameProm.then(name => {
+    const url = urlFn(currentUser.id, id);
+    document.getElementById('qrModalTitle').textContent = `QR — ${name}`;
+    document.getElementById('qrModalSub').textContent = isKds ? 'Open this link on a kitchen screen for the display' : 'Customers scan this to view the menu for this table';
+    document.getElementById('qrUrlBox').textContent = url;
+    generateQR(url, 200);
+    document.getElementById('qrModalOverlay').classList.add('open');
+  });
+}
+function generateQR(url, px) {
+  const canvas = document.getElementById('qrCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = px; canvas.height = px;
+  const img = new Image(); img.crossOrigin='anonymous';
+  img.onload = () => ctx.drawImage(img,0,0,px,px);
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&data=${encodeURIComponent(url)}&color=1C1C1C&bgcolor=FFFFFF`;
+}
+function closeQrModal()  { document.getElementById('qrModalOverlay').classList.remove('open'); }
+function downloadQR()    { const c=document.getElementById('qrCanvas'),a=document.createElement('a'); a.download=`qr-${qrTableId}.png`; a.href=c.toDataURL(); a.click(); }
+function copyQrUrl()     { navigator.clipboard.writeText(document.getElementById('qrUrlBox').textContent).then(()=>showToast('URL copied!','green')); }
+
+// ── KDS — OWNER SIDE ──────────────────────────────────────────
+function openAddKdsModal() {
+  document.getElementById('kdsNameInput').value = '';
+  document.getElementById('kdsModalOverlay').classList.add('open');
+}
+function closeKdsModal() { document.getElementById('kdsModalOverlay').classList.remove('open'); }
+
+async function saveKds() {
+  const name = document.getElementById('kdsNameInput').value.trim();
+  if (!name) { showToast('Enter a display name'); return; }
+  const kds = { id:'kds_'+Date.now(), name, createdAt:Date.now() };
+  await saveKdsFB(currentUser.id, kds);
+  closeKdsModal(); renderKdsList();
+  showToast(`Kitchen display "${name}" created!`,'green');
+}
+
+async function renderKdsList() {
+  const screens = await getKdsScreens(currentUser.id);
+  document.getElementById('kdsCountBadge').textContent = screens.length;
+  if (!screens.length) {
+    document.getElementById('kdsListContainer').innerHTML =
+      `<div class="empty-state"><div class="e-icon">🖥️</div><h3>No kitchen displays yet</h3><p>Create a display to show orders in real time in your kitchen</p></div>`;
+    return;
+  }
+  document.getElementById('kdsListContainer').innerHTML = screens.map(k => {
+    const url = getKdsUrl(currentUser.id, k.id);
+    return `<div class="kds-list-item">
+      <div class="kds-list-icon">🖥️</div>
+      <div class="kds-list-info">
+        <div class="kds-list-name">${esc(k.name)}</div>
+        <div class="kds-list-meta">${url}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-secondary btn-xs" data-kds-qr="${k.id}">📱 QR</button>
+        <button class="btn btn-secondary btn-xs" data-kds-copy="${k.id}">🔗 Link</button>
+        <button class="btn btn-secondary btn-xs" data-kds-open="${k.id}">🖥 Open</button>
+        <button class="btn btn-danger btn-xs" data-kds-del="${k.id}">Del</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('[data-kds-qr]').forEach(btn =>
+    btn.addEventListener('click', () => openQrModal(btn.dataset.kdsQr, true)));
+  document.querySelectorAll('[data-kds-copy]').forEach(btn =>
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(getKdsUrl(currentUser.id, btn.dataset.kdsCopy)).then(() => showToast('Link copied!','green'));
+    }));
+  document.querySelectorAll('[data-kds-open]').forEach(btn =>
+    btn.addEventListener('click', () => window.open(getKdsUrl(currentUser.id, btn.dataset.kdsOpen), '_blank')));
+  document.querySelectorAll('[data-kds-del]').forEach(btn =>
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this kitchen display?')) return;
+      await deleteKdsFB(currentUser.id, btn.dataset.kdsDel);
+      renderKdsList(); showToast('Display deleted');
+    }));
+}
+
+// ════════════════════════════════════════════════════════
+//  KITCHEN DISPLAY SCREEN (KDS VIEW)
+// ════════════════════════════════════════════════════════
+async function initKdsView() {
+  document.getElementById('kdsView').classList.add('show');
+  document.querySelector('#kdsView').style.display = 'block';
+  document.getElementById('ownerDash').style.display = 'none';
+  document.getElementById('customerView').style.display = 'none';
+
+  // Load KDS name
+  try {
+    const screens = await getKdsScreens(kdsState.restUserId);
+    const kds = screens.find(k => k.id === kdsState.kdsId);
+    if (kds) document.getElementById('kdsDisplayName').textContent = kds.name;
+  } catch(_) {}
+
+  // Clock
+  setInterval(() => {
+    document.getElementById('kdsClock').textContent = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }, 1000);
+
+  // Load tables cache
+  kdsTablesCache = await getTables(kdsState.restUserId);
+
+  // Real-time order listener
+  unsubKdsOrders = onSnapshot(userCol('orders', kdsState.restUserId), snap => {
+    kdsOrdersCache = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderKdsScreen();
+  });
+}
+
+function renderKdsScreen() {
+  // Only show active (unpaid) orders
+  const active = kdsOrdersCache
+    .filter(o => o.status !== 'paid' && o.kitchenStatus !== 'dismissed')
+    .sort((a,b) => a.placedAt - b.placedAt);
+
+  document.getElementById('kdsQueueCount').textContent = active.length;
+
+  // ── LEFT: Order Queue ──
+  const queueEl = document.getElementById('kdsOrderQueue');
+  if (!active.length) {
+    queueEl.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#444;font-family:'Montserrat',sans-serif">
+      <div style="font-size:3rem;margin-bottom:12px">✅</div>
+      <div style="font-weight:800;font-size:1rem">All clear! No pending orders.</div>
+    </div>`;
+  } else {
+    // Build new HTML; preserve existing cards to avoid flicker
+    active.forEach(order => {
+      const existing = document.getElementById('kds-card-' + order.id);
+      if (existing) {
+        // Update checkboxes state only (don't rebuild whole card)
+        updateKdsCardItems(existing, order);
+        return;
+      }
+      // New card
+      const card = buildKdsCard(order);
+      queueEl.appendChild(card);
+    });
+    // Remove cards for orders no longer active
+    queueEl.querySelectorAll('[id^="kds-card-"]').forEach(el => {
+      const oid = el.id.replace('kds-card-','');
+      if (!active.find(o => o.id === oid)) {
+        el.classList.add('kds-exit');
+        setTimeout(() => el.remove(), 500);
+      }
+    });
+  }
+
+  // ── RIGHT: By Table ──
+  const tableEl = document.getElementById('kdsTableView');
+  const grouped = {};
+  active.forEach(o => {
+    if (!grouped[o.tableId]) grouped[o.tableId] = [];
+    grouped[o.tableId].push(o);
+  });
+
+  if (!Object.keys(grouped).length) {
+    tableEl.innerHTML = `<div style="color:#444;font-size:0.8rem;font-family:'Montserrat',sans-serif;padding:20px 0;text-align:center">No active tables</div>`;
+  } else {
+    tableEl.innerHTML = Object.entries(grouped).map(([tableId, orders]) => {
+      const tbl = kdsTablesCache.find(t => t.id === tableId);
+      const tableName = tbl ? tbl.name : tableId;
+      const allItems = orders.flatMap(o => o.items.map(it => ({...it, orderId:o.id})));
+      return `<div class="kds-table-tile">
+        <div class="kds-table-tile-head">${esc(tableName)} <span class="count-chip">${allItems.reduce((s,i)=>s+i.qty,0)} items</span></div>
+        ${allItems.map(it => `<div class="kds-table-item ${it.done?'done':''}">
+          <span>${it.image&&it.image.length<=4?it.image+' ':''}${esc(it.name)}</span>
+          <span class="qty-tag">×${it.qty}</span>
+        </div>`).join('')}
+      </div>`;
+    }).join('');
+  }
+}
+
+function buildKdsCard(order) {
+  const card = document.createElement('div');
+  card.className = 'kds-card';
+  card.id = 'kds-card-' + order.id;
+  const tbl = kdsTablesCache.find(t => t.id === order.tableId);
+  const minutesAgo = Math.floor((Date.now() - order.placedAt) / 60000);
+  const isUrgent   = minutesAgo >= 15;
+  const doneCount  = (order.items || []).filter(it => it.done).length;
+  const totalCount = (order.items || []).length;
+  const allDone    = doneCount === totalCount && totalCount > 0;
+  const pct        = totalCount ? Math.round((doneCount/totalCount)*100) : 0;
+
+  card.innerHTML = `
+    <div class="kds-card-head">
+      <div>
+        <div class="kds-table-name">🪑 ${esc(tbl?tbl.name:order.tableId)}</div>
+        <div class="kds-order-id">#${order.id.slice(-6).toUpperCase()} · ${order.items.length} item(s)</div>
+      </div>
+      <div class="kds-time-chip ${isUrgent?'urgent':''}">${minutesAgo}m ago</div>
+    </div>
+    <div class="kds-items-wrap">
+      ${(order.items||[]).map((it,idx) => `
+        <div class="kds-item-row" id="kds-item-${order.id}-${idx}">
+          <div class="kds-item-check ${it.done?'checked':''}" data-order="${order.id}" data-idx="${idx}"></div>
+          <div class="kds-item-name ${it.done?'done-item':''}">${esc(it.name)}</div>
+          <div class="kds-item-qty">×${it.qty}</div>
+        </div>`).join('')}
+    </div>
+    <div class="kds-progress"><div class="kds-progress-bar" style="width:${pct}%"></div></div>
+    <div class="kds-complete-badge">✅ Order Complete — Notifying customer…</div>
+  `;
+
+  if (allDone) card.classList.add('kds-done');
+
+  // Wire checkboxes
+  card.querySelectorAll('.kds-item-check').forEach(cb => {
+    cb.addEventListener('click', () => kdsToggleItem(cb.dataset.order, parseInt(cb.dataset.idx)));
+  });
+
+  return card;
+}
+
+function updateKdsCardItems(cardEl, order) {
+  const doneCount = (order.items||[]).filter(it=>it.done).length;
+  const total     = (order.items||[]).length;
+  const pct       = total ? Math.round((doneCount/total)*100) : 0;
+
+  // Update each item row
+  (order.items||[]).forEach((it,idx) => {
+    const cb   = cardEl.querySelector(`[data-order="${order.id}"][data-idx="${idx}"]`);
+    const name = cardEl.querySelector(`#kds-item-${order.id}-${idx} .kds-item-name`);
+    if (cb) { cb.classList.toggle('checked', !!it.done); }
+    if (name) { name.classList.toggle('done-item', !!it.done); }
+  });
+
+  const bar = cardEl.querySelector('.kds-progress-bar');
+  if (bar) bar.style.width = pct + '%';
+
+  const allDone = doneCount === total && total > 0;
+  cardEl.classList.toggle('kds-done', allDone);
+
+  // Update time chip
+  const minutesAgo = Math.floor((Date.now() - order.placedAt) / 60000);
+  const timeChip = cardEl.querySelector('.kds-time-chip');
+  if (timeChip) {
+    timeChip.textContent = minutesAgo + 'm ago';
+    timeChip.className = 'kds-time-chip ' + (minutesAgo >= 15 ? 'urgent' : '');
+  }
+}
+
+async function kdsToggleItem(orderId, itemIdx) {
+  // Find the order in cache
+  const order = kdsOrdersCache.find(o => o.id === orderId);
+  if (!order) return;
+
+  const items = (order.items || []).map((it,i) => i===itemIdx ? {...it, done: !it.done} : it);
+  const allDone = items.every(it => it.done);
+
+  const update = { items };
+  if (allDone) {
+    update.kitchenStatus = 'done';
+    // Notify customers at this table
+    notifyCustomersOrderReady(kdsState.restUserId, order.tableId, order.sessionId);
+  } else {
+    update.kitchenStatus = 'preparing';
+  }
+
+  await updateOrderFB(kdsState.restUserId, orderId, update);
+  // The onSnapshot will fire and renderKdsScreen will update
+}
+
+async function notifyCustomersOrderReady(restUserId, tableId, sessionId) {
+  // Update the order's sessionId's session doc so customer listener picks it up
+  try {
+    // Update all non-kicked sessions for this table
+    const sessions = await getSessions(restUserId);
+    const relevant = sessions.filter(s => s.tableId === tableId && !s.kicked);
+    await Promise.all(relevant.map(s => updateSessionFB(restUserId, s.sessionId, { orderReadyAt: Date.now() })));
+  } catch(_) {}
+}
+
+// ── TABLE DETAIL ──────────────────────────────────────────────
+async function openTableDetail(tableId) {
+  const [tables,sessions,orders] = await Promise.all([getTables(currentUser.id),getSessions(currentUser.id),getOrders(currentUser.id)]);
+  const table   = tables.find(t=>t.id===tableId);
+  const now     = Date.now();
+  const tblSess = sessions.filter(s=>s.tableId===tableId&&(now-s.joinedAt)<90000);
+  const tblOrds = orders.filter(o=>o.tableId===tableId&&o.status!=='paid');
+
+  const sessHtml = tblSess.length ? tblSess.map(s => {
+    const isKicked = s.kicked, isDenied = s.denied&&!s.kicked;
+    const statusBadge = isKicked
+      ? `<span class="location-chip denied">👢 Kicked</span>`
+      : isDenied ? `<span class="location-chip denied">🚫 Denied</span>`
+      : `<span style="color:var(--success);font-size:0.7rem;font-weight:700">● Active</span>`;
+    return `<div class="viewer-card ${isKicked?'blocked-card':''}">
+      <div class="viewer-header"><div><div class="viewer-id">Session: ${s.sessionId.slice(0,16)}…</div><div class="viewer-time">Joined ${timeAgo(s.joinedAt)} · FP: ${(s.fingerprint||'unknown').slice(0,10)}…</div></div>${statusBadge}</div>
+      ${s.lat?`<div class="location-chip verified" style="margin-top:8px">📍 ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</div>`:'<div class="location-chip" style="margin-top:8px">📍 Location not shared</div>'}
+      ${s.ordersPlaced?`<div style="font-size:0.72rem;color:var(--success);margin-top:6px;font-weight:700">✓ Order placed this session</div>`:''}
+      ${!isKicked&&!isDenied?`<div class="viewer-actions">
+        <button class="btn btn-warn btn-xs" data-kick-sess="${s.sessionId}" data-kick-table="${tableId}">👢 Kick</button>
+        <button class="btn btn-danger btn-xs" data-block-sess="${s.sessionId}" data-block-fp="${s.fingerprint||''}" data-block-table="${tableId}">🚫 Kick & Block</button>
+      </div>`:''}
+    </div>`;
+  }).join('') : '<div class="empty-state" style="padding:20px"><div class="e-icon">👤</div><h3>No active viewers</h3></div>';
+
+  const ordHtml = tblOrds.length ? tblOrds.map(o=>renderOrderCardHtml(o,tables)).join('') :
+    '<div class="empty-state" style="padding:20px"><div class="e-icon">📋</div><h3>No pending orders</h3></div>';
+
+  document.getElementById('tableDetailContent').innerHTML = `
+    <div class="table-detail-header">
+      <div class="table-detail-num">🪑 <em>${esc(table?table.name:tableId)}</em></div>
+      <div class="table-detail-sub">${tblSess.length} viewer(s) · ${tblOrds.length} pending order(s)</div>
+    </div>
+    <div class="section-title">👥 Active Viewers</div>${sessHtml}
+    <div class="section-title" style="margin-top:16px">📋 Table Orders</div>${ordHtml}`;
+  document.getElementById('tableDetailOverlay').classList.add('open');
+
+  document.querySelectorAll('[data-kick-sess]').forEach(btn =>
+    btn.addEventListener('click', () => kickSession(btn.dataset.kickTable, btn.dataset.kickSess, false)));
+  document.querySelectorAll('[data-block-sess]').forEach(btn =>
+    btn.addEventListener('click', () => kickSession(btn.dataset.blockTable, btn.dataset.blockSess, true, btn.dataset.blockFp)));
+  wireOrderButtons();
+}
+function closeTableDetail() { document.getElementById('tableDetailOverlay').classList.remove('open'); }
+
+// ── BOOKINGS ─────────────────────────────────────────────────
+async function renderBookings() {
+  const snap = await getDocs(collection(fdb,'bookings'));
+  const bookings = snap.docs.map(d=>({id:d.id,...d.data()}))
+    .filter(b=>b.restaurantId===currentUser.id||b.restaurantName===currentUser.name)
+    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+  document.getElementById('bookingsCount').textContent = bookings.length;
+  if (!bookings.length) {
+    document.getElementById('bookingsContainer').innerHTML =
+      '<div class="empty-state"><div class="e-icon">📅</div><h3>No advance bookings yet</h3></div>';
+    return;
+  }
+  document.getElementById('bookingsContainer').innerHTML = bookings.map(b=>{
+    const isPast = b.date&&new Date(b.date)<new Date();
+    return `<div class="order-card" style="margin-bottom:12px">
+      <div class="order-card-header"><div><div class="order-card-title">👤 ${esc(b.customerName||'Guest')} · ${b.guests||'—'}</div><div class="order-card-meta">📅 ${b.date||'—'} at ${b.time||'—'} · ${isPast?'<span style="color:var(--muted)">Past</span>':'<span style="color:var(--success);font-weight:700">Upcoming</span>'}</div></div><span class="order-status-chip chip-ready">₹${b.totalPaid||0} paid</span></div>
+      ${b.dishes?`<div style="background:var(--cream);border-radius:10px;padding:10px 12px;font-size:0.75rem;color:var(--ink)">🍽️ <strong>Pre-orders:</strong> ${esc(b.dishes)}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── KICK / BLOCK ──────────────────────────────────────────────
+async function kickSession(tableId, sessionId, andBlock, fingerprint) {
+  if (!confirm(andBlock?'Kick & Block this device permanently?':'Kick this user from the current session?')) return;
+  await updateSessionFB(currentUser.id, sessionId, {kicked:true, denied:true});
+  if (andBlock&&fingerprint) {
+    await addBlockFB(currentUser.id, {id:fingerprint,fingerprint,sessionId,tableId,blockedAt:Date.now(),reason:'Manually blocked by owner'});
+    showToast('User kicked and device blocked 🚫','red');
+  } else { showToast('User kicked from this session 👢','red'); }
+  setTimeout(() => deleteSessionFB(currentUser.id, sessionId), 5000);
+  openTableDetail(tableId);
+}
+
+// ── BLOCKED PANEL ─────────────────────────────────────────────
+async function renderBlocked() {
+  const blocked = await getBlocked(currentUser.id);
+  document.getElementById('blockedCount').textContent = blocked.length;
+  if (!blocked.length) {
+    document.getElementById('blockedContainer').innerHTML =
+      '<div class="empty-state"><div class="e-icon">✅</div><h3>No blocked devices</h3></div>';
+    return;
+  }
+  document.getElementById('blockedContainer').innerHTML = blocked.map(b=>`
+    <div class="blocked-item">
+      <div class="blocked-item-info">
+        <div class="blocked-id">Device: ${b.fingerprint.slice(0,18)}…</div>
+        <div class="blocked-meta">Blocked ${new Date(b.blockedAt).toLocaleString()}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="blocked-badge">🚫 Blocked</span>
+        <button class="btn btn-success btn-xs" data-unblock="${b.id}">Unblock</button>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('[data-unblock]').forEach(btn =>
+    btn.addEventListener('click', () => unblockDevice(btn.dataset.unblock)));
+}
+
+async function unblockDevice(id) {
+  if (!confirm('Unblock this device?')) return;
+  await removeBlockFB(currentUser.id, id);
+  renderBlocked(); showToast('Device unblocked','green');
+}
+
+// ── DISH DETAILS ──────────────────────────────────────────────
+async function openDishDetail(dishId) {
+  const dish = custDishMenu.find(d=>d.id===dishId);
+  if (!dish) return;
+  document.getElementById('dishDetailTitle').textContent = dish.name;
+  document.getElementById('dishDetailBody').innerHTML = `
+    <div style="height:160px;background:linear-gradient(135deg,#FFF0E0,#FFE0C0);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:4rem;margin-bottom:16px">
+      ${dish.image&&dish.image.length<=4?dish.image:`<img src="${dish.image}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`}
+    </div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.2rem;color:var(--dark)">${esc(dish.name)}</div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.1rem;color:var(--saffron);margin:6px 0">₹${dish.price}</div>
+    ${dish.cookTime?`<div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px">⏱ Ready in ${dish.cookTime}</div>`:''}
+    ${dish.ingredients&&dish.ingredients.length?`<div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px">🌿 Ingredients</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">${dish.ingredients.map(i=>`<span style="background:#FFF0E0;border:1px solid #F0C898;border-radius:50px;padding:4px 11px;font-size:0.73rem;color:var(--deep);font-family:'Montserrat',sans-serif;font-weight:600">${esc(i)}</span>`).join('')}</div>`:''}
+    <div id="dishFunFact" style="background:rgba(232,112,26,0.07);border:1px solid rgba(232,112,26,0.2);border-radius:12px;padding:14px;font-size:0.78rem;color:var(--muted);line-height:1.6">
+      <span style="font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)">🤔 Fun Fact</span><br>Loading…
+    </div>`;
+  document.getElementById('dishDetailOverlay').classList.add('open');
+  document.getElementById('dishDetailDrawer').classList.add('open');
+  document.body.style.overflow='hidden';
+  document.getElementById('dishDetailAddBtn').onclick = () => { custAddToCart(dishId); closeDishDetail(); };
+  try {
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:`Give ONE short fun fact about the dish "${dish.name}" in 1-2 sentences. Just the fact, no preamble.`}]})});
+    const data = await resp.json();
+    document.getElementById('dishFunFact').innerHTML = `<span style="font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)">🤔 Fun Fact</span><br>${data.choices[0].message.content.trim()}`;
+  } catch(_) {
+    document.getElementById('dishFunFact').innerHTML = `<span style="font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)">🤔 Fun Fact</span><br>Every dish has a story — this one's been delighting diners for generations!`;
+  }
+}
+function closeDishDetail() {
+  document.getElementById('dishDetailOverlay').classList.remove('open');
+  document.getElementById('dishDetailDrawer').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+// ── ORDERS ────────────────────────────────────────────────────
+async function renderOrders() {
+  const [orders,tables] = await Promise.all([getOrders(currentUser.id),getTables(currentUser.id)]);
+  const pending = orders.filter(o=>o.status!=='paid');
+  document.getElementById('liveOrderCount').textContent = pending.length;
+  if (!pending.length) {
+    document.getElementById('ordersContainer').innerHTML =
+      '<div class="empty-state"><div class="e-icon">📋</div><h3>No pending orders</h3></div>';
+    return;
+  }
+  document.getElementById('ordersContainer').innerHTML = pending.map(o=>renderOrderCardHtml(o,tables)).join('');
+  wireOrderButtons();
+}
+
+function renderOrderCardHtml(order, tables) {
+  const statusClass = order.billRequested?'bill-req':'';
+  const chip = order.billRequested
+    ? '<span class="order-status-chip chip-bill">🧾 Bill Requested</span>'
+    : order.kitchenStatus==='done'
+      ? '<span class="order-status-chip chip-kitchen-done">✅ Kitchen Done</span>'
+      : order.status==='ready'
+        ? '<span class="order-status-chip chip-ready">✓ Ready</span>'
+        : '<span class="order-status-chip chip-preparing">⏳ Preparing</span>';
+  const itemRows = order.items.map(i =>
+    `<div class="order-item-row">
+      <span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}${i.done?' <span style="color:var(--success);font-size:0.65rem;font-weight:700">✓ Done</span>':''}</span>
+      <span class="price">₹${i.price*i.qty}</span>
+    </div>`
+  ).join('');
+  const tbl = (tables||[]).find(t=>t.id===order.tableId);
+  return `<div class="order-card ${statusClass}">
+    <div class="order-card-header">
+      <div>
+        <div class="order-card-title">🪑 ${tbl?esc(tbl.name):'Table'} · #${order.id.slice(-6).toUpperCase()}</div>
+        <div class="order-card-meta">${new Date(order.placedAt).toLocaleTimeString()} · ${order.items.length} item(s)</div>
+      </div>
+      ${chip}
+    </div>
+    <div class="order-items-list">
+      ${itemRows}
+      <div class="order-total-row"><span>Total</span><span class="price">₹${order.total}</span></div>
+    </div>
+    <div class="order-actions">
+      ${order.status!=='ready'&&order.kitchenStatus!=='done'?`<button class="btn btn-success btn-sm" data-ready-order="${order.id}">✓ Mark Ready</button>`:''}
+      <button class="btn btn-primary btn-sm" data-bill-order="${order.id}">🧾 ${order.billRequested?'Generate Bill':'View Bill'}</button>
+    </div>
+  </div>`;
+}
+
+function wireOrderButtons() {
+  document.querySelectorAll('[data-ready-order]').forEach(btn =>
+    btn.addEventListener('click', () => markOrderReady(btn.dataset.readyOrder)));
+  document.querySelectorAll('[data-bill-order]').forEach(btn =>
+    btn.addEventListener('click', () => openBillModal(btn.dataset.billOrder)));
+}
+
+async function markOrderReady(orderId) {
+  await updateOrderFB(currentUser.id, orderId, {status:'ready'});
+  renderOrders(); showToast('Order marked as ready!','green');
+}
+
+// ── BILL ──────────────────────────────────────────────────────
+async function openBillModal(orderId) {
+  billOrderId = orderId; await recalcBill();
+  document.getElementById('billModalOverlay').classList.add('open');
+}
+function closeBillModal() { document.getElementById('billModalOverlay').classList.remove('open'); billOrderId=null; }
+
+async function recalcBill() {
+  if (!billOrderId) return;
+  const [orders,tables] = await Promise.all([getOrders(currentUser.id),getTables(currentUser.id)]);
+  const order = orders.find(o=>o.id===billOrderId); if (!order) return;
+  const cgst = parseFloat(document.getElementById('billCgst').value)||0;
+  const sgst = parseFloat(document.getElementById('billSgst').value)||0;
+  const cgstAmt = (order.total*cgst/100).toFixed(2);
+  const sgstAmt = (order.total*sgst/100).toFixed(2);
+  const grandTotal = (order.total+parseFloat(cgstAmt)+parseFloat(sgstAmt)).toFixed(2);
+  const tbl = tables.find(t=>t.id===order.tableId);
+  document.getElementById('billPreviewContainer').innerHTML = `
+    <div class="bill-preview">
+      <div class="bill-header">
+        <div class="bill-logo">Aahaar Saathi</div>
+        <div class="bill-info">${esc(currentUser.name)}<br>Bill · ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+        <div class="bill-info">Table: ${tbl?esc(tbl.name):'—'} · Order #${order.id.slice(-6).toUpperCase()}</div>
+      </div>
+      ${order.items.map(i=>`<div class="bill-row"><span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}</span><span>₹${i.price*i.qty}</span></div>`).join('')}
+      <div class="bill-tax">Subtotal: ₹${order.total}</div>
+      <div class="bill-tax">CGST (${cgst}%): ₹${cgstAmt}</div>
+      <div class="bill-tax">SGST (${sgst}%): ₹${sgstAmt}</div>
+      <div class="bill-row total"><span>Grand Total</span><span class="price">₹${grandTotal}</span></div>
+      <div class="bill-footer">Thank you for dining with us!<br>Aahaar Saathi — Your Food Companion 🧡</div>
+    </div>`;
+  activeBillOrder = {order,cgst,sgst,cgstAmt,sgstAmt,grandTotal:parseFloat(grandTotal)};
+}
+
+async function markOrderPaid() {
+  if (!activeBillOrder) return;
+  const {order,cgstAmt,sgstAmt,grandTotal} = activeBillOrder;
+  await updateOrderFB(currentUser.id, order.id, {status:'paid'});
+  await saveBillFB(currentUser.id, {
+    id:'bill_'+Date.now(), orderId:order.id, tableId:order.tableId,
+    items:order.items, subtotal:order.total,
+    cgst:parseFloat(cgstAmt), sgst:parseFloat(sgstAmt), total:grandTotal, paidAt:Date.now()
+  });
+  closeBillModal(); renderOrders(); renderHistory(); renderTables();
+  const allSess = await getSessions(currentUser.id);
+  const tblSess = allSess.filter(s=>s.tableId===order.tableId&&!s.kicked);
+  await Promise.all(tblSess.map(s=>updateSessionFB(currentUser.id,s.sessionId,{orderStatus:'paid'})));
+  showToast('Bill saved — Order marked as paid!','green');
+}
+
+// ── HISTORY ───────────────────────────────────────────────────
+async function renderHistory() {
+  const [bills,tables] = await Promise.all([getBills(currentUser.id),getTables(currentUser.id)]);
+  document.getElementById('historyCount').textContent = bills.length;
+  if (!bills.length) {
+    document.getElementById('historyContainer').innerHTML = '<div class="empty-state"><div class="e-icon">💰</div><h3>No paid bills yet</h3></div>';
+    return;
+  }
+  document.getElementById('historyContainer').innerHTML = bills.map(b => {
+    const tbl = tables.find(t=>t.id===b.tableId);
+    return `<div class="history-item">
+      <div class="history-icon">🧾</div>
+      <div class="history-info">
+        <div class="history-title">${tbl?esc(tbl.name):'Table'} · #${b.orderId.slice(-6).toUpperCase()}</div>
+        <div class="history-meta">${new Date(b.paidAt).toLocaleString()} · ${b.items.length} items</div>
+      </div>
+      <div class="history-amount">₹${b.total}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CUSTOMER VIEW
+// ══════════════════════════════════════════════════════════════
+async function initCustomerView() {
+  document.getElementById('customerView').classList.add('show');
+  const fp = getDeviceFingerprint();
+
+  // Block check
+  const blocked = await getBlocked(customerState.restUserId);
+  if (blocked.some(b=>b.id===fp)) { showDeniedScreen('blocked'); return; }
+
+  // Restaurant name
+  try {
+    const restDoc = await getDoc(doc(fdb,'restaurants',customerState.restUserId));
+    if (restDoc.exists()) document.getElementById('custRestName').textContent = restDoc.data().name||'Our Restaurant';
+  } catch(_) {}
+
+  // Table name
+  const tables = await getTables(customerState.restUserId);
+  const tbl = tables.find(t=>t.id===customerState.tableId);
+  document.getElementById('custTableBadge').textContent = `🪑 ${tbl?tbl.name:customerState.tableId}`;
+
+  // Register session
+  const sessionObj = {
+    sessionId: customerState.sessionId,
+    tableId:   customerState.tableId,
+    fingerprint: fp,
+    joinedAt:  Date.now(),
+    denied:    false, kicked: false,
+    lat: null, lng: null, ordersPlaced: false
+  };
+  await saveSessionFB(customerState.restUserId, sessionObj);
+
+  // Geolocation
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      await updateSessionFB(customerState.restUserId, customerState.sessionId, {lat:pos.coords.latitude, lng:pos.coords.longitude});
+    });
+  }
+
+  // Load menu
+  const menu = await getMenu(customerState.restUserId);
+  custDishMenu = menu.filter(d=>d.available!==false);
+  renderCustMenu();
+
+  // Heartbeat
+  const heartbeat = setInterval(async () => {
+    await updateSessionFB(customerState.restUserId, customerState.sessionId, {joinedAt:Date.now()});
+  }, 30000);
+
+  const geoWatch = navigator.geolocation && navigator.geolocation.watchPosition(async pos => {
+    await updateSessionFB(customerState.restUserId, customerState.sessionId, {lat:pos.coords.latitude,lng:pos.coords.longitude,locationUpdatedAt:Date.now()});
+  });
+
+  window.addEventListener('beforeunload', () => {
+    navigator.sendBeacon&&navigator.sendBeacon('/api/noop');
+    const url = `https://firestore.googleapis.com/v1/projects/aahaarsaathi/databases/(default)/documents/sessions/${customerState.restUserId}/items/${customerState.sessionId}`;
+    fetch(url,{method:'DELETE',keepalive:true}).catch(()=>{});
+    navigator.geolocation&&geoWatch&&navigator.geolocation.clearWatch(geoWatch);
+    clearInterval(heartbeat);
+  });
+
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState==='hidden') {
+      await updateSessionFB(customerState.restUserId, customerState.sessionId, {joinedAt:0});
+    } else {
+      await updateSessionFB(customerState.restUserId, customerState.sessionId, {joinedAt:Date.now()});
+    }
+  });
+
+  // Real-time session listener (kick/deny/pay/orderReady)
+  const myOrdersReady = new Set(); // track which orders we've notified for
+
+  onSnapshot(userDoc('sessions', customerState.restUserId, customerState.sessionId), snap => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (data.orderStatus==='paid') {
+      clearInterval(heartbeat);
+      customerState.placedOrders=[];
+      customerState.cart=[];
+      updateCustCartCount();
+      showDeniedScreen('paid'); return;
+    }
+    if (data.kicked) { clearInterval(heartbeat); showDeniedScreen('kicked'); return; }
+    if (data.denied) { clearInterval(heartbeat); showDeniedScreen('denied'); return; }
+    // Order ready notification
+    if (data.orderReadyAt && !myOrdersReady.has(data.orderReadyAt)) {
+      myOrdersReady.add(data.orderReadyAt);
+      showOrderReadyBanner();
+    }
+  });
+
+  // Also listen to this session's orders directly for kitchenStatus + sync placedOrders
+  onSnapshot(userCol('orders', customerState.restUserId), snap => {
+    const allOrders = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const myOrders  = allOrders.filter(o=>o.sessionId===customerState.sessionId);
+
+    // Sync status back into placedOrders tracker
+    if(customerState.placedOrders){
+      customerState.placedOrders.forEach(po => {
+        const live = myOrders.find(o=>o.id===po.orderId);
+        if(live){
+          po.items        = live.items;       // picks up per-item done flags
+          po.kitchenStatus= live.kitchenStatus;
+          po.status       = live.status;
+        }
+      });
+      // Remove only orders that are paid
+      customerState.placedOrders = customerState.placedOrders.filter(po=>{
+        const live=myOrders.find(o=>o.id===po.orderId);
+        // keep if still in Firestore (not yet paid+deleted); mark paid if status===paid
+        if(!live) po.status='paid';  // order was marked paid and may have been wiped — keep receipt briefly
+        return true;
+      });
+    }
+
+    // Notify if kitchen done
+    myOrders.forEach(o => {
+      if (o.kitchenStatus==='done' && !myOrdersReady.has('order_'+o.id)) {
+        myOrdersReady.add('order_'+o.id);
+        showOrderReadyBanner();
+      }
+    });
+  });
+
+  // Block listener
+  onSnapshot(userCol('blocked', customerState.restUserId), snap => {
+    const fp2 = getDeviceFingerprint();
+    if (snap.docs.some(d=>d.id===fp2)) { clearInterval(heartbeat); showDeniedScreen('blocked'); }
+  });
+}
+
+function showOrderReadyBanner() {
+  const banner = document.getElementById('orderReadyBanner');
+  banner.classList.add('show');
+  // Try browser notification
+  if ('Notification' in window && Notification.permission === 'granted') {
+    new Notification('🎉 Your order is ready!', { body: 'The kitchen has prepared your food. It\'ll be with you shortly.' });
+  } else if ('Notification' in window && Notification.permission !== 'denied') {
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') new Notification('🎉 Your order is ready!', { body: 'The kitchen has prepared your food.' });
+    });
+  }
+  // Auto-dismiss after 8s
+  setTimeout(() => banner.classList.remove('show'), 8000);
+  showToast('🎉 Your order is ready!', 'green');
+}
+
+function showDeniedScreen(reason) {
+  document.getElementById('custMenuWrap').style.display='none';
+  document.getElementById('custTimeTabs').style.display='none';
+  document.getElementById('openCartBtn').style.display='none';
+  document.querySelector('.cust-hero').style.opacity='0.4';
+  const icon=document.getElementById('deniedIcon'), title=document.getElementById('deniedTitle'), sub=document.getElementById('deniedSub');
+  if (reason==='kicked') {
+    icon.textContent='👢'; title.textContent='You\'ve Been Removed';
+    sub.textContent='The restaurant owner has removed you from this session. Please speak to a staff member.';
+  } else if (reason==='paid') {
+    icon.textContent='🎉'; title.textContent='Bill Paid!';
+    sub.textContent='Thank you for dining with us. See you again!';
+  } else if (reason==='blocked') {
+    icon.textContent='🚫'; title.textContent='Access Blocked';
+    sub.textContent='Your device has been blocked. Please visit the restaurant counter.';
+  } else {
+    icon.textContent='🚫'; title.textContent='Access Restricted';
+    sub.textContent='The restaurant owner has restricted access to this menu.';
+  }
+  document.getElementById('deniedScreen').classList.add('show');
+}
+
+// ── CUSTOMER MENU ─────────────────────────────────────────────
+function custFilterSlot(slot) { custActiveSlot=slot; renderCustMenu(); }
+
+function renderCustMenu() {
+  const wrap = document.getElementById('custMenuWrap');
+  let dishes = custDishMenu;
+  if (custActiveSlot!=='all') {
+    dishes = dishes.filter(d=>!d.availableSlots||d.availableSlots.length===0||
+      d.availableSlots.includes(custActiveSlot)||d.availableSlots.includes('All Day'));
+  }
+  if (!dishes.length) {
+    wrap.innerHTML = '<div class="empty-state" style="padding:60px 20px"><div class="e-icon">🍽</div><h3>No dishes available</h3></div>';
+    return;
+  }
+  const catOrder  = ['signature','daily','festive','regional'];
+  const catLabels = {signature:'⭐ Signature',daily:'📅 Daily Specials',festive:'🎉 Festive',regional:'🏡 Regional'};
+  const grouped   = {};
+  dishes.forEach(d=>{const c=d.category||'regional';if(!grouped[c])grouped[c]=[];grouped[c].push(d);});
+  let html='';
+  catOrder.forEach(cat=>{
+    if(!grouped[cat]?.length) return;
+    html+=`<div class="menu-section-title">${catLabels[cat]}<span class="badge">${grouped[cat].length}</span></div><div class="menu-grid">`;
+    grouped[cat].forEach((d,i)=>{html+=custDishCardHtml(d,i);});
+    html+=`</div>`;
+  });
+  wrap.innerHTML=html;
+  wrap.querySelectorAll('[data-detail-dish]').forEach(btn =>
+    btn.addEventListener('click',e=>{e.stopPropagation();openDishDetail(btn.dataset.detailDish);}));
+  wrap.querySelectorAll('.dish-card').forEach(card =>
+    card.addEventListener('click',()=>openDishDetail(card.querySelector('[data-detail-dish]').dataset.detailDish)));
+}
+
+function custDishCardHtml(d,i) {
+  const isEmoji=d.image&&d.image.length<=4;
+  const imgHtml=isEmoji?`<div style="font-size:2.6rem;display:flex;align-items:center;justify-content:center;height:100%">${d.image}</div>`:`<img src="${d.image}" onerror="this.outerHTML='<div style=font-size:2.6rem>🍛</div>'" style="width:100%;height:100%;object-fit:cover"/>`;
+  const catMap={regional:'',signature:'signature',daily:'daily',festive:'festive'};
+  const catNames={regional:'Regional',signature:'Signature ⭐',daily:'Daily',festive:'Festive 🎉'};
+  return `<div class="dish-card" style="animation-delay:${i*0.04}s">
+    <div class="dish-img-wrap">${imgHtml}<span class="cat-badge ${catMap[d.category]||''}">${catNames[d.category]||'Regional'}</span></div>
+    <div class="dish-body">
+      <div class="dish-name">${esc(d.name)}</div>
+      <div class="dish-footer-row"><div class="dish-price">₹${d.price}</div><button class="add-btn" data-detail-dish="${d.id}">→</button></div>
+      ${d.cookTime?`<div style="font-size:0.6rem;color:var(--muted);margin-top:3px">⏱ ${d.cookTime}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function custAddToCart(dishId) {
+  const dish=custDishMenu.find(d=>d.id===dishId); if(!dish) return;
+  const ex=customerState.cart.find(c=>c.id===dishId);
+  if(ex) ex.qty++; else customerState.cart.push({id:dish.id,name:dish.name,price:dish.price,image:dish.image,qty:1});
+  updateCustCartCount();
+  showToast(`${dish.image&&dish.image.length<=4?dish.image:'🍛'} ${dish.name} added!`);
+  const cc=document.getElementById('custCartCount');
+  cc.classList.add('bump'); setTimeout(()=>cc.classList.remove('bump'),250);
+}
+
+function updateCustCartCount() {
+  document.getElementById('custCartCount').textContent=customerState.cart.reduce((s,c)=>s+c.qty,0);
+}
+
+function openCustCart()  { renderCustCartDrawer(); document.getElementById('custCartOverlay').classList.add('open'); document.getElementById('custCartDrawer').classList.add('open'); document.body.style.overflow='hidden'; }
+function closeCustCart() { document.getElementById('custCartOverlay').classList.remove('open'); document.getElementById('custCartDrawer').classList.remove('open'); document.body.style.overflow=''; }
+
+function renderCustCartDrawer() {
+  const el=document.getElementById('custCartItems');
+  const placed=customerState.placedOrders||[];
+
+  // ── Placed orders section ──
+  const statusBg    ={'preparing':'#FFF8E1','done':'#E8F5EE','paid':'#F0F4FF'};
+  const statusColor ={'preparing':'#E65100','done':'var(--success)','paid':'var(--info)'};
+  const statusLabel ={'preparing':'⏳ In Progress','done':'✅ Prepared','paid':'💰 Paid'};
+
+  let placedHtml='';
+  if(placed.length){
+    placedHtml=`<div style="margin-bottom:12px">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;padding:0 2px">Your Orders</div>
+      ${placed.map(o=>{
+        const allDone=o.items.every(it=>it.done);
+        const effStatus=o.status==='paid'?'paid':(allDone||o.kitchenStatus==='done'?'done':'preparing');
+        return `<div style="background:${statusBg[effStatus]||statusBg.preparing};border-radius:12px;padding:10px 13px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.06)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+            <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:var(--dark)">#${o.orderId.slice(-6).toUpperCase()}</span>
+            <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;color:${statusColor[effStatus]||statusColor.preparing};background:rgba(0,0,0,0.05);padding:2px 9px;border-radius:50px">${statusLabel[effStatus]||statusLabel.preparing}</span>
+          </div>
+          ${o.items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:2px 0;color:${it.done?'var(--muted)':'var(--ink)'}">
+            <span>${it.image&&it.image.length<=4?it.image+' ':''}${esc(it.name)} ×${it.qty}${it.done?' <span style="color:var(--success);font-size:0.65rem">✓</span>':''}</span>
+            <span style="font-family:'Montserrat',sans-serif;font-weight:600">₹${it.price*it.qty}</span>
+          </div>`).join('')}
+          <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--saffron);text-align:right;margin-top:6px;padding-top:5px;border-top:1px dashed var(--border)">₹${o.total}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // ── Empty cart ──
+  if(!customerState.cart.length){
+    el.innerHTML = placedHtml || '<div style="text-align:center;padding:40px 20px;color:var(--muted);font-size:0.85rem">Your cart is empty 🍽</div>';
+    document.getElementById('custCartTotal').textContent='₹0';
+    document.getElementById('custPlaceOrderBtn').disabled=true;
+    document.getElementById('custBillBtn').style.display = placed.length ? 'block' : 'none';
+    return;
+  }
+
+  // ── Active cart items ──
+  const cartHtml = customerState.cart.map(item=>{
+    const isEmoji=item.image&&item.image.length<=4;
+    const imgHtml=isEmoji?item.image:`<img src="${item.image}" style="width:100%;height:100%;object-fit:cover"/>`;
+    return `<div class="cust-cart-item">
+      <div class="cust-cart-item-img">${imgHtml}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.8rem;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(item.name)}</div>
+        <div style="font-size:0.74rem;color:var(--saffron);font-weight:600">₹${item.price} each</div>
+        <div class="qty-row">
+          <button class="qty-btn" data-qty-id="${item.id}" data-qty-delta="-1">−</button>
+          <span class="qty-num">${item.qty}</span>
+          <button class="qty-btn" data-qty-id="${item.id}" data-qty-delta="1">+</button>
+        </div>
+      </div>
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;color:var(--saffron);font-size:0.88rem;flex-shrink:0">₹${item.price*item.qty}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = placedHtml + cartHtml;
+
+  const total=customerState.cart.reduce((s,c)=>s+c.price*c.qty,0);
+  document.getElementById('custCartTotal').textContent=`₹${total}`;
+  document.getElementById('custPlaceOrderBtn').disabled=false;
+  if(customerState.ordersPlaced) document.getElementById('custBillBtn').style.display='block';
+
+  el.querySelectorAll('[data-qty-id]').forEach(btn =>
+    btn.addEventListener('click',()=>custChangeQty(btn.dataset.qtyId,parseInt(btn.dataset.qtyDelta))));
+}
+
+function custChangeQty(id,delta){
+  const idx=customerState.cart.findIndex(c=>c.id===id); if(idx<0) return;
+  customerState.cart[idx].qty+=delta;
+  if(customerState.cart[idx].qty<=0) customerState.cart.splice(idx,1);
+  updateCustCartCount(); renderCustCartDrawer();
+}
+
+async function custPlaceOrder(){
+  if(!customerState.cart.length) return;
+  const total=customerState.cart.reduce((s,c)=>s+c.price*c.qty,0);
+  const items = customerState.cart.map(it => ({...it, done:false}));
+  const orderId = 'ord_'+Date.now();
+  const order={
+    id:orderId, tableId:customerState.tableId, sessionId:customerState.sessionId,
+    items, total, status:'preparing', kitchenStatus:'pending', billRequested:false, placedAt:Date.now()
+  };
+  await saveOrderFB(customerState.restUserId, order);
+  await updateSessionFB(customerState.restUserId, customerState.sessionId, {
+    ordersPlaced:true, lastOrderAt:Date.now(), cartSnapshot:items, orderStatus:'preparing'
+  });
+  // Move cart items to placedOrders tracker instead of deleting
+  if(!customerState.placedOrders) customerState.placedOrders=[];
+  customerState.placedOrders.push({ orderId, items, total, status:'preparing', kitchenStatus:'pending', placedAt:Date.now() });
+  customerState.cart=[];
+  customerState.ordersPlaced=true;
+  updateCustCartCount();
+  document.getElementById('custBillBtn').style.display='block';
+  closeCustCart(); showToast('Order placed! 🎉','green');
+  setTimeout(()=>showGamePrompt(),800);
+}
+
+async function custRequestBill(){
+  const orders=await getOrders(customerState.restUserId);
+  const mine=orders.filter(o=>o.sessionId===customerState.sessionId&&o.status!=='paid');
+  await Promise.all(mine.map(o=>updateOrderFB(customerState.restUserId,o.id,{billRequested:true})));
+  closeCustCart(); showToast('Bill requested! Staff will attend to you shortly.','green');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function timeAgo(ts){const d=Date.now()-ts;if(d<60000)return`${Math.floor(d/1000)}s ago`;if(d<3600000)return`${Math.floor(d/60000)}m ago`;return`${Math.floor(d/3600000)}h ago`;}
+
+let toastTimer;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── EXPOSE GLOBALS FOR INLINE onclick HANDLERS ────────────────
+window.loadGame       = loadGame;
+window.closeGameModal = closeGameModal;
+window.backToGamePicker = backToGamePicker;
+window.closeDishDetail  = closeDishDetail;
+window.checkCrossword   = checkCrossword;   // already set but add here too for clarity
+window.mineRestart      = mineRestart;      // same
+
+// ── GAMES ─────────────────────────────────────────────────────
+function showGamePrompt(){
+  document.getElementById('gamePicker').style.display='grid';
+  document.getElementById('gameFrame').style.display='none';
+  document.getElementById('gameModalOverlay').classList.add('open');
+}
+function closeGameModal(){
+  document.getElementById('gameModalOverlay').classList.remove('open');
+  document.getElementById('gameHTMLWrap').innerHTML='';
+}
+function backToGamePicker(){
+  document.getElementById('gamePicker').style.display='grid';
+  document.getElementById('gameFrame').style.display='none';
+  document.getElementById('gameHTMLWrap').innerHTML='';
+}
+
+async function loadGame(type){
+  document.getElementById('gamePicker').style.display='none';
+  document.getElementById('gameFrame').style.display='block';
+  document.getElementById('gameHTMLWrap').innerHTML='<div style="text-align:center;padding:60px;color:var(--muted);font-family:Montserrat,sans-serif;font-weight:700">Loading game…</div>';
+  if(type==='flappy'){renderFlappy();return;}
+  if(type==='minesweeper'){renderMinesweeper();return;}
+  if(type==='sudoku'){renderSudoku();return;}
+  if(type==='crossword'){await renderCrossword();return;}
+}
+
+function renderFlappy(){
+  const wrap=document.getElementById('gameHTMLWrap');
+  wrap.innerHTML=`<canvas id="flappyCanvas" width="360" height="480" style="display:block;margin:0 auto;background:#87CEEB"></canvas>`;
+  const canvas=document.getElementById('flappyCanvas'),ctx=canvas.getContext('2d');
+  let bird={x:80,y:200,vy:0},pipes=[],score=0,alive=true,frame=0;
+  const GRAVITY=0.5,JUMP=-8,GAP=140,PIPE_W=50,SPEED=3;
+  function jump(){if(!alive){restart();return;}bird.vy=JUMP;}
+  canvas.addEventListener('click',jump);
+  document.addEventListener('keydown',e=>{if(e.code==='Space')jump();});
+  function restart(){bird={x:80,y:200,vy:0};pipes=[];score=0;alive=true;frame=0;}
+  function loop(){
+    ctx.clearRect(0,0,360,480);
+    ctx.fillStyle='#87CEEB';ctx.fillRect(0,0,360,480);
+    if(alive){
+      bird.vy+=GRAVITY;bird.y+=bird.vy;
+      if(frame%90===0){const top=60+Math.random()*200;pipes.push({x:370,top,bottom:top+GAP});}
+      pipes.forEach(p=>p.x-=SPEED);
+      pipes=pipes.filter(p=>p.x>-PIPE_W);
+      pipes.forEach(p=>{if(bird.x+14>p.x&&bird.x-14<p.x+PIPE_W&&(bird.y-14<p.top||bird.y+14>p.bottom))alive=false;if(Math.abs(bird.x-(p.x+PIPE_W/2))<2)score++;});
+      if(bird.y>480||bird.y<0)alive=false;
+    }
+    ctx.fillStyle='#E8701A';
+    pipes.forEach(p=>{ctx.fillRect(p.x,0,PIPE_W,p.top);ctx.fillRect(p.x,p.bottom,PIPE_W,480-p.bottom);});
+    ctx.font='28px serif';ctx.fillText('🐦',bird.x-14,bird.y+10);
+    ctx.fillStyle='#1C1C1C';ctx.font='bold 20px Montserrat,sans-serif';ctx.fillText(`Score: ${score}`,10,34);
+    if(!alive){ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,360,480);ctx.fillStyle='#fff';ctx.font='bold 28px Montserrat,sans-serif';ctx.textAlign='center';ctx.fillText('Game Over!',180,200);ctx.font='18px Montserrat,sans-serif';ctx.fillText(`Score: ${score}`,180,234);ctx.font='16px Montserrat,sans-serif';ctx.fillText('Tap to restart',180,268);ctx.textAlign='left';}
+    frame++;requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+function renderMinesweeper(){
+  const ROWS=9,COLS=9,MINES=12;
+  let board=[],revealed=[],flagged=[],gameOver=false,won=false;
+  function init(){
+    board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+    revealed=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    flagged=Array.from({length:ROWS},()=>Array(COLS).fill(false));
+    gameOver=false;won=false;
+    let placed=0;
+    while(placed<MINES){const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);if(board[r][c]!==-1){board[r][c]=-1;placed++;}}
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){if(board[r][c]===-1)continue;let cnt=0;for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&board[nr][nc]===-1)cnt++;}board[r][c]=cnt;}
+  }
+  function reveal(r,c){if(r<0||r>=ROWS||c<0||c>=COLS||revealed[r][c]||flagged[r][c])return;revealed[r][c]=true;if(board[r][c]===0)for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)reveal(r+dr,c+dc);}
+  init();
+  const wrap=document.getElementById('gameHTMLWrap');
+  function render(){
+    const colors=['','#1565C0','#2E7D32','#C62828','#283593','#6A1429','#00838F','#424242','#37474F'];
+    let html=`<div style="font-family:Montserrat,sans-serif;padding:12px 20px 0;font-weight:800;font-size:0.88rem;color:var(--dark)">🌶️ Chili Sweeper · ${MINES} chilis</div><div style="padding:8px 20px 16px;display:inline-grid;grid-template-columns:repeat(${COLS},36px);gap:3px">`;
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const isRev=revealed[r][c],isFlag=flagged[r][c],val=board[r][c];
+      let bg=isRev?(val===-1?'#FFEBEE':'#F5F5F5'):'#E8D5BF';
+      let content=isRev?(val===-1?'🌶️':(val>0?`<span style="color:${colors[val]};font-weight:800">${val}</span>`:'')):( isFlag?'🚩':'');
+      html+=`<div data-r="${r}" data-c="${c}" style="width:36px;height:36px;background:${bg};border:1px solid #D0C0B0;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.9rem;user-select:none">${content}</div>`;
+    }
+    html+=`</div>`;
+    if(gameOver)html+=`<div style="text-align:center;padding:10px;font-family:Montserrat,sans-serif;font-weight:800;color:#C62828">💥 You hit a chili! <button onclick="mineRestart()" style="margin-left:10px;background:var(--saffron);border:none;color:#fff;border-radius:50px;padding:5px 14px;cursor:pointer;font-weight:700">Restart</button></div>`;
+    if(won)html+=`<div style="text-align:center;padding:10px;font-family:Montserrat,sans-serif;font-weight:800;color:var(--success)">🎉 You cleared all chilis! <button onclick="mineRestart()" style="margin-left:10px;background:var(--saffron);border:none;color:#fff;border-radius:50px;padding:5px 14px;cursor:pointer;font-weight:700">Play Again</button></div>`;
+    wrap.innerHTML=html;
+    wrap.querySelectorAll('[data-r]').forEach(cell=>{
+      cell.addEventListener('click',()=>{
+        if(gameOver||won)return;
+        const r=+cell.dataset.r,c=+cell.dataset.c;
+        if(flagged[r][c]||revealed[r][c])return;
+        if(board[r][c]===-1){revealed[r][c]=true;gameOver=true;}
+        else reveal(r,c);
+        const totalSafe=ROWS*COLS-MINES,revSafe=revealed.flat().filter(Boolean).length-(gameOver?1:0);
+        if(!gameOver&&revSafe>=totalSafe)won=true;
+        render();
+      });
+      cell.addEventListener('contextmenu',e=>{e.preventDefault();if(gameOver||won||revealed[+cell.dataset.r][+cell.dataset.c])return;flagged[+cell.dataset.r][+cell.dataset.c]=!flagged[+cell.dataset.r][+cell.dataset.c];render();});
+    });
+  }
+  render();
+}
+
+function renderSudoku(){
+  const puzzles=[[5,3,0,0,7,0,0,0,0,6,0,0,1,9,5,0,0,0,0,9,8,0,0,0,0,6,0,8,0,0,0,6,0,0,0,3,4,0,0,8,0,3,0,0,1,7,0,0,0,2,0,0,0,6,0,6,0,0,0,0,2,8,0,0,0,0,4,1,9,0,0,5,0,0,0,0,8,0,0,7,9]];
+  const solution=[5,3,4,6,7,8,9,1,2,6,7,2,1,9,5,3,4,8,1,9,8,3,4,2,5,6,7,8,5,9,7,6,1,4,2,3,4,2,6,8,5,3,7,9,1,7,1,3,9,2,4,8,5,6,9,6,1,5,3,7,2,8,4,2,8,7,4,1,9,6,3,5,3,4,5,2,8,6,1,7,9];
+  const puzzle=[...puzzles[0]],user=[...puzzle];
+  const wrap=document.getElementById('gameHTMLWrap');
+  function render(){
+    let html=`<div style="padding:16px 20px 0;font-family:Montserrat,sans-serif;font-weight:800;font-size:0.88rem;color:var(--dark)">🔢 Sudoku</div><div style="display:inline-grid;grid-template-columns:repeat(9,36px);gap:2px;padding:12px 20px;border-collapse:collapse">`;
+    for(let i=0;i<81;i++){
+      const r=Math.floor(i/9),c=i%9,fixed=puzzle[i]!==0,val=user[i]||'',err=val&&val!==solution[i];
+      const borderR=c===2||c===5?'3px solid #7A6A5A':'1px solid #D0C0B0';
+      const borderB=r===2||r===5?'3px solid #7A6A5A':'1px solid #D0C0B0';
+      html+=`<input data-idx="${i}" type="text" maxlength="1" value="${val}" ${fixed?'readonly':''} style="width:36px;height:36px;text-align:center;border:none;border-right:${borderR};border-bottom:${borderB};background:${fixed?'#F5EDE3':(err?'#FFEBEE':'#fff')};color:${fixed?'#7A6A5A':(err?'#C62828':'#1C1C1C')};font-family:Montserrat,sans-serif;font-weight:${fixed?800:600};font-size:0.95rem;outline:none">`;
+    }
+    html+=`</div>`;
+    wrap.innerHTML=html;
+    wrap.querySelectorAll('input[data-idx]').forEach(inp=>{
+      if(inp.readOnly)return;
+      inp.addEventListener('input',()=>{const v=inp.value.replace(/[^1-9]/g,'');inp.value=v;user[+inp.dataset.idx]=v?+v:0;render();if(user.every((v,i)=>v===solution[i]))showToast('🎉 Sudoku solved!','green');});
+    });
+  }
+  render();
+}
+
+async function renderCrossword(){
+  const wrap=document.getElementById('gameHTMLWrap');
+  wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-family:Montserrat,sans-serif">🌶️ Generating food crossword…</div>';
+  let clues;
+  try{
+    const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:400,messages:[{role:'user',content:'Give me 5 food-related crossword clues and answers. Respond ONLY as JSON array: [{"clue":"...","answer":"..."},…]. Answers must be single words, 3-8 letters, all caps.'}]})});
+    const data=await resp.json();
+    clues=JSON.parse(data.choices[0].message.content.trim());
+  }catch(_){clues=[{clue:'Yellow spice in curry',answer:'TURMERIC'},{clue:'Indian bread baked in clay oven',answer:'NAAN'},{clue:'Spicy green or red pod',answer:'CHILI'},{clue:'Sour Indian yogurt drink',answer:'LASSI'},{clue:'Pan-fried flatbread',answer:'ROTI'}];}
+  let html=`<div style="padding:16px 20px;font-family:Montserrat,sans-serif"><div style="font-weight:800;font-size:0.9rem;color:var(--dark);margin-bottom:12px">📝 Food Crossword</div>`;
+  clues.forEach((c,i)=>{
+    html+=`<div style="margin-bottom:14px"><div style="font-size:0.78rem;color:var(--muted);margin-bottom:5px;font-weight:600">${i+1}. ${c.clue}</div><div style="display:flex;gap:4px">`;
+    for(let j=0;j<c.answer.length;j++)html+=`<input data-ci="${i}" data-li="${j}" maxlength="1" style="width:32px;height:32px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-family:Montserrat,sans-serif;font-weight:800;font-size:0.88rem;text-transform:uppercase;outline:none;background:#fff;color:var(--dark)">`;
+    html+=`</div></div>`;
+  });
+  html+=`<button onclick="checkCrossword()" style="background:var(--saffron);border:none;color:#fff;border-radius:50px;padding:9px 22px;font-family:Montserrat,sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;margin-top:4px">Check Answers ✓</button><div id="cwResult" style="margin-top:10px;font-family:Montserrat,sans-serif;font-weight:700;font-size:0.82rem"></div></div>`;
+  wrap.innerHTML=html;
+  window._cwClues=clues;
+  wrap.querySelectorAll('input[data-ci]').forEach(inp=>inp.addEventListener('input',()=>{inp.value=inp.value.toUpperCase();}));
+}
+
+window.checkCrossword=()=>{
+  const clues=window._cwClues;let correct=0;
+  clues.forEach((c,i)=>{
+    let word='';document.querySelectorAll(`input[data-ci="${i}"]`).forEach(inp=>word+=inp.value);
+    const match=word===c.answer;if(match)correct++;
+    document.querySelectorAll(`input[data-ci="${i}"]`).forEach(inp=>{inp.style.background=match?'#E8F5EE':'#FFEBEE';inp.style.borderColor=match?'var(--success)':'#C62828';});
+  });
+  document.getElementById('cwResult').textContent=`${correct}/${clues.length} correct! ${correct===clues.length?'🎉 Perfect!':'Keep trying!'}`;
+};
+</script>
+</body>
+</html>

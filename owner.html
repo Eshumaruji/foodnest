@@ -10,7 +10,26 @@
 :root{
   --saffron:#E8701A;--deep:#C45A0F;--cream:#FDF6EC;--warm:#FFFAF4;
   --dark:#1C1C1C;--ink:#2D2D2D;--muted:#7A6A5A;--border:#E8D5BF;
-  --success:#27AE60;--arrived:#1A7A4A;--danger:#E53935;--info:#1565C0;
+  --success:#27AE60;--arrived:#1A7A4A;--danger:#E53935;--const occupied      = tSessions.length > 0;
+    const activeBooking = getActiveBooking(t.id);
+    const isBooked      = !!activeBooking && !occupied;
+
+    const statusClass = hasBillReq ? 'bill-requested'
+      : hasOrders   ? 'ordering'
+      : occupied    ? 'occupied'
+      : isBooked    ? 'booked'
+      : '';
+
+    const statusText = hasBillReq ? '🧾 Bill Requested'
+      : hasOrders   ? '🍽 Order in Progress'
+      : occupied    ? '👥 Occupied'
+      : isBooked    ? `📅 Booked${activeBooking.time ? ' at ' + activeBooking.time : ''}`
+      : '⬜ Available';
+
+    const statusColor = hasBillReq ? 'bill'
+      : occupied || hasOrders ? 'occ'
+      : isBooked ? 'booked-status'
+      : '';info:#1565C0;
   --radius:16px;--sm:10px;--shadow:0 4px 24px rgba(232,112,26,0.12);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1176,15 +1195,17 @@ async function renderTables() {
     const activeBooking = getActiveBooking(t.id);
     const isBooked     = !!activeBooking && !occupied;
 
-    const statusClass = recentlyPaid ? 'paid'
-      : hasBillReq  ? 'bill-requested'
+    const occupied      = tSessions.length > 0;
+    const activeBooking = getActiveBooking(t.id);
+    const isBooked      = !!activeBooking && !occupied;
+
+    const statusClass = hasBillReq ? 'bill-requested'
       : hasOrders   ? 'ordering'
       : occupied    ? 'occupied'
       : isBooked    ? 'booked'
       : '';
 
-    const statusText = recentlyPaid ? '✅ Recently Paid'
-      : hasBillReq  ? '🧾 Bill Requested'
+    const statusText = hasBillReq ? '🧾 Bill Requested'
       : hasOrders   ? '🍽 Order in Progress'
       : occupied    ? '👥 Occupied'
       : isBooked    ? `📅 Booked${activeBooking.time ? ' at ' + activeBooking.time : ''}`

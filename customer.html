@@ -11,7 +11,7 @@
 <!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, updateDoc, increment, getDoc, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, setDoc, serverTimestamp, doc, updateDoc, deleteDoc, increment, getDoc, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const firebaseConfig = {
@@ -44,7 +44,8 @@
   window.__fsWhere = where;
   window.__fsOnSnapshot = onSnapshot;
   window.__fsOrderBy = orderBy;
-
+  window.__fsDeleteDoc = deleteDoc;
+  window.__fsSetDoc = setDoc;
   window.__googleSignIn = async () => signInWithPopup(auth, googleProvider);
   window.__signOut = () => signOut(auth);
 
@@ -1084,6 +1085,34 @@ let currentOrderBooking = null;
 let orderCart = {};
 let currentMenuItems = [];
 
+// ── NESTED ORDER HELPERS (matches owner dashboard's orders/{restaurantId}/items structure) ──
+function ownerOrdersCol(restaurantId) {
+  return window.__fsCollection(window.__db, 'orders', restaurantId, 'items');
+}
+function ownerOrderDoc(restaurantId, orderId) {
+  return window.__fsDoc(window.__db, 'orders', restaurantId, 'items', orderId);
+}
+function ownerSessionDoc(restaurantId, sessionId) {
+  return window.__fsDoc(window.__db, 'sessions', restaurantId, 'items', sessionId);
+}
+async function saveOrderToOwner(restaurantId, order) {
+  await window.__fsSetDoc(ownerOrderDoc(restaurantId, order.id), order);
+}
+async function updateOrderAtOwner(restaurantId, orderId, fields) {
+  await window.__fsUpdateDoc(ownerOrderDoc(restaurantId, orderId), fields);
+}
+async function getMyOrders(restaurantId, sessionId) {
+  const snap = await window.__fsDocs(ownerOrdersCol(restaurantId));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sessionId === sessionId);
+}
+async function upsertSessionForBooking(restaurantId, sessionId, tableId) {
+  await window.__fsSetDoc(ownerSessionDoc(restaurantId, sessionId), {
+    sessionId, tableId, fingerprint: 'booking_' + sessionId,
+    joinedAt: Date.now(), denied: false, kicked: false,
+    lat: null, lng: null, ordersPlaced: false
+  });
+}
+
 // ── GUEST SIZE MAP ──
 const guestSizeMap = {
   '1':  { label: 'Solo (1)',               count: 1 },
@@ -1665,6 +1694,10 @@ async function confirmBookingPayment(btn) {
     status: 'confirmed',
     createdAt: window.__fsTimestamp(),
   });
+  const sessionId = 'sess_book_' + docRef.id;
+  try {
+    await window.__fsUpdateDoc(window.__fsDoc(db, 'bookings', docRef.id), { sessionId });
+  } catch(e) { console.warn('sessionId attach skipped:', e); }
   if (bookingData.restaurantId && bookingData.ownerReceives) {
     try {
       const restRef = window.__fsDoc(db, 'restaurants', bookingData.restaurantId);
@@ -1818,6 +1851,9 @@ async function openOrderSheet(bookingId) {
     const bSnap = await window.__fsGetDoc(bRef);
     if (!bSnap.exists()) { showToast('Booking not found', 'red'); return; }
     currentOrderBooking = { id: bookingId, ...bSnap.data() };
+    if (currentOrderBooking.sessionId) {
+      startOrderStatusListener(currentOrderBooking.restaurantId, currentOrderBooking.sessionId);
+    }
     orderCart = {};
     
     document.getElementById('orderSheetSub').textContent = `${currentOrderBooking.restaurantName} · ${currentOrderBooking.date} ${currentOrderBooking.time}`;
@@ -1896,14 +1932,107 @@ function renderOrderSheet() {
   </div>`;
   
   if (subtotal > 0) {
-    html += `<button class="btn-primary" onclick="proceedOrderPayment()">💳 Pay Bill ₹${subtotal} →</button>`;
+    html += `<button class="btn-primary" onclick="placeOrderNow()">🍽️ Place Order (₹${subtotal}) →</button>`;
   } else {
-    html += `<button class="btn-primary" style="opacity:0.5;cursor:not-allowed;" disabled>Select items to pay →</button>`;
+    html += `<button class="btn-primary" style="opacity:0.5;cursor:not-allowed;" disabled>Select items to order →</button>`;
   }
-  
+  html += `<button class="btn-secondary" onclick="requestBillForBooking()">🧾 Request Bill</button>`;
+
   document.getElementById('orderSheetBody').innerHTML = html;
 }
 
+// ── PLACE ORDER (matches file 1's custPlaceOrder — no payment, just sends to kitchen) ──
+async function placeOrderNow() {
+  const items = Object.entries(orderCart).map(([id, q]) => {
+    const item = currentMenuItems.find(m => m.id === id);
+    return { id, name: item?.name || id, price: item?.price || 0, image: item?.image || '🍛', qty: q, done: false };
+  }).filter(i => i.qty > 0);
+
+  if (!items.length) { showToast('Please add items to your order', 'red'); return; }
+
+  const b = currentOrderBooking;
+  if (!b.bookedTableId) {
+    showToast('No table assigned yet — please wait for the restaurant to confirm your table.', 'red');
+    return;
+  }
+
+  const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const sessionId = b.sessionId || ('sess_book_' + b.id);
+  const orderId = 'ord_' + Date.now();
+
+  const order = {
+    id: orderId,
+    tableId: b.bookedTableId,
+    sessionId,
+    items,
+    total,
+    status: 'preparing',
+    kitchenStatus: 'pending',
+    billRequested: false,
+    placedAt: Date.now()
+  };
+
+  try {
+    await upsertSessionForBooking(b.restaurantId, sessionId, b.bookedTableId);
+    await saveOrderToOwner(b.restaurantId, order);
+    await window.__fsUpdateDoc(window.__fsDoc(window.__db, 'sessions', b.restaurantId, 'items', sessionId), {
+      ordersPlaced: true, lastOrderAt: Date.now(), orderStatus: 'preparing'
+    });
+
+    if (!currentOrderBooking.placedOrders) currentOrderBooking.placedOrders = [];
+    currentOrderBooking.placedOrders.push(order);
+
+    orderCart = {};
+    closeOrderSheet();
+    showToast('Order placed! The kitchen has been notified 🎉', 'green');
+    startOrderStatusListener(b.restaurantId, sessionId);
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Could not place order. Please try again.', 'red');
+  }
+}
+window.placeOrderNow = placeOrderNow;
+
+// ── REQUEST BILL (matches file 1's custRequestBill) ──
+async function requestBillForBooking() {
+  const b = currentOrderBooking;
+  if (!b) return;
+  const sessionId = b.sessionId || ('sess_book_' + b.id);
+  try {
+    const mine = await getMyOrders(b.restaurantId, sessionId);
+    const unpaid = mine.filter(o => o.status !== 'paid');
+    if (!unpaid.length) { showToast('No active order to bill yet.', 'red'); return; }
+    await Promise.all(unpaid.map(o => updateOrderAtOwner(b.restaurantId, o.id, { billRequested: true })));
+    closeOrderSheet();
+    showToast('Bill requested! Staff will attend to you shortly.', 'green');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Could not request bill.', 'red');
+  }
+}
+window.requestBillForBooking = requestBillForBooking;
+
+// ── LIVE ORDER STATUS LISTENER (matches file 1's onSnapshot for kitchenStatus/billRequested/paid) ──
+let unsubMyOrderStatus = null;
+function startOrderStatusListener(restaurantId, sessionId) {
+  if (unsubMyOrderStatus) unsubMyOrderStatus();
+  unsubMyOrderStatus = window.__fsOnSnapshot(ownerOrdersCol(restaurantId), snap => {
+    const mine = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.sessionId === sessionId);
+    mine.forEach(o => {
+      if (o.kitchenStatus === 'done') {
+        showToast('🎉 Your order is ready!', 'green');
+      }
+      if (o.status === 'paid') {
+        showToast('💰 Bill settled — thank you!', 'green');
+      }
+    });
+    // Refresh the order sheet if it's open so item ticks / totals stay current
+    if (document.getElementById('orderSheet').classList.contains('open')) {
+      renderOrderSheet();
+    }
+  });
+}
+  
 function updateCart(itemId, delta) {
   const current = orderCart[itemId] || 0;
   const newQty = Math.max(0, current + delta);

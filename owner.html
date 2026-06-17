@@ -2189,7 +2189,7 @@ function custAddToCart(dishId) {
   const ex=customerState.cart.find(c=>c.id===dishId);
   if(ex) ex.qty++; else customerState.cart.push({id:dish.id,name:dish.name,price:dish.price,image:dish.image,qty:1});
   updateCustCartCount();
-  showToast("${dish.image&&dish.image.length<=4?dish.image:'🍛'} ${dish.name} added!");
+  showToast(`${dish.image&&dish.image.length<=4?dish.image:'🍛'} ${dish.name} added!`);
   const cc=document.getElementById('custCartCount');
   cc.classList.add('bump'); setTimeout(()=>cc.classList.remove('bump'),250);
 }

@@ -2041,23 +2041,6 @@ function updateCart(itemId, delta) {
 }
 window.updateCart = updateCart;
   
-// Update pay button
-const payBtn = subtotalEl ? subtotalEl.nextElementSibling : null;
-if (payBtn) {
-  if (subtotal > 0) {
-    payBtn.disabled = false;
-    payBtn.style.opacity = '1';
-    payBtn.style.cursor = 'pointer';
-    payBtn.onclick = proceedOrderPayment;
-    payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">💳 Pay Bill ₹${subtotal} →</span>`;
-  } else {
-    payBtn.disabled = true;
-    payBtn.style.opacity = '0.5';
-    payBtn.style.cursor = 'not-allowed';
-    payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">Select items to pay →</span>`;
-  }
-}
-
 function proceedOrderPayment() {
   const subtotal = Object.entries(orderCart).reduce((s, [id, q]) => {
     const item = currentMenuItems.find(m => m.id === id);

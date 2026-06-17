@@ -1,6 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/:city/:slug/owner.html", "destination": "/owner.html" },
-    { "source": "/:slug/customer.html", "destination": "/customer.html" }
-  ]
-}

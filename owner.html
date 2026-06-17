@@ -2189,7 +2189,7 @@ function custAddToCart(dishId) {
   const ex=customerState.cart.find(c=>c.id===dishId);
   if(ex) ex.qty++; else customerState.cart.push({id:dish.id,name:dish.name,price:dish.price,image:dish.image,qty:1});
   updateCustCartCount();
-  showToast(`${dish.image&&dish.image.length<=4?dish.image:'🍛'} ${dish.name} added!`);
+  showToast("${dish.image&&dish.image.length<=4?dish.image:'🍛'} ${dish.name} added!");
   const cc=document.getElementById('custCartCount');
   cc.classList.add('bump'); setTimeout(()=>cc.classList.remove('bump'),250);
 }
@@ -2211,26 +2211,51 @@ function renderCustCartDrawer() {
   const statusLabel ={'preparing':'⏳ In Progress','done':'✅ Prepared','paid':'💰 Paid'};
 
   let placedHtml='';
-  if(placed.length){
-    placedHtml=`<div style="margin-bottom:12px">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;padding:0 2px">Your Orders</div>
-      ${placed.map(o=>{
-        const allDone=o.items.every(it=>it.done);
-        const effStatus=o.status==='paid'?'paid':(allDone||o.kitchenStatus==='done'?'done':'preparing');
-        return `<div style="background:${statusBg[effStatus]||statusBg.preparing};border-radius:12px;padding:10px 13px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.06)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-            <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:var(--dark)">#${o.orderId.slice(-6).toUpperCase()}</span>
-            <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;color:${statusColor[effStatus]||statusColor.preparing};background:rgba(0,0,0,0.05);padding:2px 9px;border-radius:50px">${statusLabel[effStatus]||statusLabel.preparing}</span>
+  if (placed.length) {
+  placedHtml = `
+    <div style="margin-bottom:12px">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;padding:0 2px">
+        Your Orders
+      </div>
+      ${placed.map(o => {
+        const allDone = o.items.every(it => it.done);
+        const effStatus =
+          o.status === 'paid'
+            ? 'paid'
+            : (allDone || o.kitchenStatus === 'done'
+                ? 'done'
+                : 'preparing');
+        return `
+          <div style="background:${statusBg[effStatus] || statusBg.preparing};border-radius:12px;padding:10px 13px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.06)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+              <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:var(--dark)">
+                #${o.orderId.slice(-6).toUpperCase()}
+              </span>
+              <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;color:${statusColor[effStatus] || statusColor.preparing};background:rgba(0,0,0,0.05);padding:2px 9px;border-radius:50px">
+                ${statusLabel[effStatus] || statusLabel.preparing}
+              </span>
+            </div>
+            ${o.items.map(it => `
+              <div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:2px 0;color:${it.done ? 'var(--muted)' : 'var(--ink)'}">
+                <span>
+                  ${it.image && it.image.length <= 4 ? it.image + ' ' : ''}
+                  ${esc(it.name)} ×${it.qty}
+                  ${it.done ? ' <span style="color:var(--success);font-size:0.65rem">✓</span>' : ''}
+                </span>
+                <span style="font-family:'Montserrat',sans-serif;font-weight:600">
+                  ₹${it.price * it.qty}
+                </span>
+              </div>
+            `).join('')}
+            <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--saffron);text-align:right;margin-top:6px;padding-top:5px;border-top:1px dashed var(--border)">
+              ₹${o.total}
+            </div>
           </div>
-          ${o.items.map(it=>`<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:2px 0;color:${it.done?'var(--muted)':'var(--ink)'}">
-            <span>${it.image&&it.image.length<=4?it.image+' ':''}${esc(it.name)} ×${it.qty}${it.done?' <span style="color:var(--success);font-size:0.65rem">✓</span>':''}</span>
-            <span style="font-family:'Montserrat',sans-serif;font-weight:600">₹${it.price*it.qty}</span>
-          </div>`).join('')}
-          <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--saffron);text-align:right;margin-top:6px;padding-top:5px;border-top:1px dashed var(--border)">₹${o.total}</div>
-        </div>`;
+        `;
       }).join('')}
-    </div>`;
-  }
+    </div>
+  `;
+}
 
   // ── Empty cart ──
   if(!customerState.cart.length){

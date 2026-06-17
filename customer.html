@@ -901,6 +901,11 @@ window.__onAuthReady = async (user) => {
       const city = session.city || 'your city';
       document.getElementById('heroSub').textContent = `Discovering great food in ${city}`;
       await loadRestaurants();
+      setInterval(() => {
+        if (document.getElementById('tab-content-bookings').classList.contains('active')) {
+          loadMyBookings();
+        }
+      }, 30000);
       return;
     }
     showLoginGate();
@@ -1357,7 +1362,9 @@ async function loadMyBookings() {
       <div class="booking-card">
         <div class="booking-card-head">
           <div class="booking-card-rest">🏪 ${b.restaurantName || '—'}</div>
-          <span class="booking-card-status confirmed">✅ Confirmed</span>
+           <span class="booking-card-status ${b.isRejected ? 'pending' : 'confirmed'}" style="${b.isRejected ? 'background:rgba(192,57,43,0.2);color:#C0392B' : ''}">
+            ${b.isRejected ? '❌ Rejected by restaurant' : '✅ Confirmed'}
+          </span>
         </div>
         <div class="booking-info-row">
           <span class="booking-info-item">📅 ${b.date || '—'}</span>

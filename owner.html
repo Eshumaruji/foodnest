@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Aahaar Saathi — Restaurant Manager</title>
+<title>FoodNest — Restaurant Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
@@ -388,7 +388,7 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 
 <!-- SPLASH -->
 <div id="splash">
-  <div class="splash-logo">Aahaar<em>Saathi</em></div>
+  <div class="splash-logo"><em>Saathi</em></div>
   <div class="splash-sub">Restaurant Manager</div>
   <div class="splash-dots">
     <div class="splash-dot"></div><div class="splash-dot"></div><div class="splash-dot"></div>
@@ -398,7 +398,7 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 <!-- ════════════ OWNER DASHBOARD ════════════ -->
 <div id="ownerDash">
   <header>
-    <div class="logo" id="logoBtn">Aahaar<span>Saathi</span></div>
+    <div class="logo" id="logoBtn">Food<span>Nest</span></div>
     <div class="header-right">
       <div id="headerRestName" class="h-badge"></div>
       <div class="notif-bell">
@@ -489,7 +489,7 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 <!-- ════════════ KITCHEN DISPLAY SCREEN (KDS) ════════════ -->
 <div id="kdsView">
   <div class="kds-header">
-    <div class="kds-logo">Aahaar<span>Saathi</span> <span style="color:var(--saffron);font-size:0.7rem;margin-left:6px;background:#2A1A0A;padding:2px 8px;border-radius:50px">🧑‍🍳 Kitchen</span></div>
+    <div class="kds-logo">Food<span>Nest</span> <span style="color:var(--saffron);font-size:0.7rem;margin-left:6px;background:#2A1A0A;padding:2px 8px;border-radius:50px">🧑‍🍳 Kitchen</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="kds-name-badge" id="kdsDisplayName">Kitchen Display</div>
       <div class="kds-clock" id="kdsClock">00:00:00</div>
@@ -510,7 +510,7 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 <!-- ════════════ CUSTOMER VIEW ════════════ -->
 <div id="customerView">
   <header>
-    <div class="logo">Aahaar<span>Saathi</span></div>
+    <div class="logo">Food<span>Nest</span></div>
     <div class="header-right">
       <button class="cust-cart-btn" id="openCartBtn">
         🛒 Cart&nbsp;<span class="cart-count" id="custCartCount">0</span>
@@ -1708,7 +1708,7 @@ async function recalcBill() {
   document.getElementById('billPreviewContainer').innerHTML = `
     <div class="bill-preview">
       <div class="bill-header">
-        <div class="bill-logo">Aahaar Saathi</div>
+        <div class="bill-logo">Food Nest</div>
         <div class="bill-info">${esc(currentUser.name)}<br>Bill · ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
         <div class="bill-info">Table: ${tbl?esc(tbl.name):'—'} · Order #${order.id.slice(-6).toUpperCase()}</div>
       </div>
@@ -1717,7 +1717,7 @@ async function recalcBill() {
       <div class="bill-tax">CGST (${cgst}%): ₹${cgstAmt}</div>
       <div class="bill-tax">SGST (${sgst}%): ₹${sgstAmt}</div>
       <div class="bill-row total"><span>Grand Total</span><span class="price">₹${grandTotal}</span></div>
-      <div class="bill-footer">Thank you for dining with us!<br>Aahaar Saathi — Your Food Companion 🧡</div>
+      <div class="bill-footer">Thank you for dining with us!<br>Food Nest — Your Food Companion 🧡</div>
     </div>`;
   activeBillOrder = {order,cgst,sgst,cgstAmt,sgstAmt,grandTotal:parseFloat(grandTotal)};
 }

@@ -10,27 +10,9 @@
 :root{
   --saffron:#E8701A;--deep:#C45A0F;--cream:#FDF6EC;--warm:#FFFAF4;
   --dark:#1C1C1C;--ink:#2D2D2D;--muted:#7A6A5A;--border:#E8D5BF;
-  --success:#27AE60;--arrived:#1A7A4A;--danger:#E53935;--const occupied      = tSessions.length > 0;
-    const activeBooking = getActiveBooking(t.id);
-    const isBooked      = !!activeBooking && !occupied;
-
-    const statusClass = hasBillReq ? 'bill-requested'
-      : hasOrders   ? 'ordering'
-      : occupied    ? 'occupied'
-      : isBooked    ? 'booked'
-      : '';
-
-    const statusText = hasBillReq ? '🧾 Bill Requested'
-      : hasOrders   ? '🍽 Order in Progress'
-      : occupied    ? '👥 Occupied'
-      : isBooked    ? `📅 Booked${activeBooking.time ? ' at ' + activeBooking.time : ''}`
-      : '⬜ Available';
-
-    const statusColor = hasBillReq ? 'bill'
-      : occupied || hasOrders ? 'occ'
-      : isBooked ? 'booked-status'
-      : '';info:#1565C0;
+  --success:#27AE60;--arrived:#1A7A4A;--danger:#E53935;--info:#1565C0;
   --radius:16px;--sm:10px;--shadow:0 4px 24px rgba(232,112,26,0.12);
+}
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -1175,6 +1157,64 @@ async function renderTables() {
       const isPaid = orders.some(o => o.sessionId === sid && o.status === 'paid');
       return !isPaid;
     });
+
+  function getActiveBooking(tableId) {
+    return bookings.find(b => b.bookedTableId === tableId) || null;
+  }
+
+  const html = tables.map(t => {
+    const tSessions  = sessions.filter(s => s.tableId === t.id && !s.kicked && !s.denied && (now - s.joinedAt) < 90000);
+    const tOrders    = orders.filter(o => o.tableId === t.id && o.status !== 'paid');
+    const hasBillReq = tOrders.some(o => o.billRequested);
+    const hasOrders  = tOrders.length > 0;
+
+    const occupied       = tSessions.length > 0;
+    const activeBooking  = getActiveBooking(t.id);
+    const isBooked       = !!activeBooking && !occupied;
+
+    const statusClass = hasBillReq ? 'bill-requested'
+      : hasOrders   ? 'ordering'
+      : occupied    ? 'occupied'
+      : isBooked    ? 'booked'
+      : '';
+
+    const statusText = hasBillReq ? '🧾 Bill Requested'
+      : hasOrders   ? '🍽 Order in Progress'
+      : occupied    ? '👥 Occupied'
+      : isBooked    ? `📅 Booked${activeBooking.time ? ' at ' + activeBooking.time : ''}`
+      : '⬜ Available';
+
+    const statusColor = hasBillReq ? 'bill'
+      : occupied || hasOrders ? 'occ'
+      : isBooked ? 'booked-status'
+      : '';
+
+    return `<div class="table-card ${statusClass}" data-table-open="${t.id}">
+      <div class="table-num">${esc(t.name)}</div>
+      <div class="table-status ${statusColor}">${statusText}</div>
+      ${t.capacity ? `<div class="table-viewers">👥 Seats ${t.capacity}</div>` : ''}
+      <div class="table-card-actions">
+        <button class="btn btn-secondary btn-xs" data-table-qr="${t.id}">📱 QR</button>
+        <button class="btn btn-secondary btn-xs" data-table-copy="${t.id}">🔗 Link</button>
+        <button class="btn btn-danger btn-xs" data-table-del="${t.id}">Del</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('tablesGrid').innerHTML = html;
+
+  document.querySelectorAll('[data-table-open]').forEach(card =>
+    card.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      openTableDetail(card.dataset.tableOpen);
+    }));
+  document.querySelectorAll('[data-table-qr]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); openQrModal(btn.dataset.tableQr, false); }));
+  document.querySelectorAll('[data-table-copy]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); copyTableUrl(btn.dataset.tableCopy); }));
+  document.querySelectorAll('[data-table-del]').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); deleteTable(btn.dataset.tableDel); }));
+}
 
 function openAddTableModal() {
   document.getElementById('tableNameInput').value='';

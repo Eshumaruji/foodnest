@@ -1145,8 +1145,22 @@ async function renderTables() {
     const recentlyPaid = paidOrders.length > 0 && unpaidOrders.length === 0 && tSessions.length === 0;
     const occupied     = tSessions.length > 0;
 
-    const statusClass= recentlyPaid?'':'(hasBillReq?\'bill-requested\':(hasOrders?\'ordering\':(occupied?\'occupied\':\'\')))'
-    
+    const statusClass = recentlyPaid ? 'paid'
+      : hasBillReq ? 'bill-requested'
+      : hasOrders  ? 'ordering'
+      : occupied   ? 'occupied'
+      : '';
+
+    const statusText = recentlyPaid ? '✅ Recently Paid'
+      : hasBillReq ? '🧾 Bill Requested'
+      : hasOrders  ? '🍽 Order in Progress'
+      : occupied   ? '👥 Occupied'
+      : '⬜ Available';
+
+    const statusColor = hasBillReq ? 'bill'
+      : occupied || hasOrders ? 'occ'
+      : '';
+
     return `<div class="table-card ${statusClass}" data-open-table="${t.id}">
       <div class="table-num">🪑 ${esc(t.name)}</div>
       <div class="table-status ${statusColor}">${statusText}</div>

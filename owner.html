@@ -2169,19 +2169,19 @@ function likelihoodLabel(stars) {
 
 function custDishCardHtml(d,i) {
   const isEmoji=d.image&&d.image.length<=4;
-  const imgHtml=isEmoji?`<div style="font-size:2.6rem;display:flex;align-items:center;justify-content:center;height:100%">${d.image}</div>`:`<img src="${d.image}" onerror="this.outerHTML='<div style=font-size:2.6rem>🍛</div>'" style="width:100%;height:100%;object-fit:cover"/>`;
+  const imgHtml=isEmoji?"<div style=\"font-size:2.6rem;display:flex;align-items:center;justify-content:center;height:100%\">${d.image}</div>":"<img src=\"${d.image}\" onerror=\"this.outerHTML='<div style=font-size:2.6rem>🍛</div>'\" style=\"width:100%;height:100%;object-fit:cover\"/>";
   const catMap={regional:'',signature:'signature',daily:'daily',festive:'festive'};
   const catNames={regional:'Regional',signature:'Signature ⭐',daily:'Daily',festive:'Festive 🎉'};
   const stars = getDishLikelihood(d);
-  return `<div class="dish-card" style="animation-delay:${i*0.04}s">
-    <div class="dish-img-wrap">${imgHtml}<span class="cat-badge ${catMap[d.category]||''}">${catNames[d.category]||'Regional'}</span></div>
-    <div class="dish-body">
-      <div class="dish-name">${esc(d.name)}</div>
-      <div class="dish-footer-row"><div class="dish-price">₹${d.price}</div><button class="add-btn" data-detail-dish="${d.id}">→</button></div>
-      ${d.cookTime?`<div style="font-size:0.6rem;color:var(--muted);margin-top:3px">⏱ ${d.cookTime}</div>`:''}
-      <div style="font-size:0.74rem;letter-spacing:1px;margin-top:5px" title="${likelihoodLabel(stars)}">${renderStars(stars)}</div>
+  return "<div class=\"dish-card\" style=\"animation-delay:${i*0.04}s\">
+    <div class=\"dish-img-wrap\">${imgHtml}<span class=\"cat-badge ${catMap[d.category]||''}\">${catNames[d.category]||'Regional'}</span></div>
+    <div class=\"dish-body\">
+      <div class=\"dish-name\">${esc(d.name)}</div>
+      <div class=\"dish-footer-row\"><div class=\"dish-price\">₹${d.price}</div><button class=\"add-btn\" data-detail-dish=\"${d.id}\">→</button></div>
+      ${d.cookTime?"<div style=\"font-size:0.6rem;color:var(--muted);margin-top:3px'">⏱ ${d.cookTime}</div>:''}
+      <div style=\"font-size:0.74rem;letter-spacing:1px;margin-top:5px\" title=\"${likelihoodLabel(stars)}\">${renderStars(stars)}</div>
     </div>
-  </div>`;
+  </div>";
 }
 
 function custAddToCart(dishId) {

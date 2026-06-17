@@ -1856,20 +1856,20 @@ async function recalcBill() {
   const sgstAmt = (order.total*sgst/100).toFixed(2);
   const grandTotal = (order.total+parseFloat(cgstAmt)+parseFloat(sgstAmt)).toFixed(2);
   const tbl = tables.find(t=>t.id===order.tableId);
-  document.getElementById('billPreviewContainer').innerHTML = `
-    <div class="bill-preview">
-      <div class="bill-header">
-        <div class="bill-logo">Food Nest</div>
-        <div class="bill-info">${esc(currentUser.name)}<br>Bill · ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-        <div class="bill-info">Table: ${tbl?esc(tbl.name):'—'} · Order #${order.id.slice(-6).toUpperCase()}</div>
+  document.getElementById('billPreviewContainer').innerHTML = "
+    <div class=\"bill-preview\">
+      <div class=\"bill-header\">
+        <div class=\"bill-logo\">Food Nest</div>
+        <div class=\"bill-info\">${esc(currentUser.name)}<br>Bill · ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+        <div class=\"bill-info\">Table: ${tbl?esc(tbl.name):'—'} · Order #${order.id.slice(-6).toUpperCase()}</div>
       </div>
-      ${order.items.map(i=>`<div class="bill-row"><span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}</span><span>₹${i.price*i.qty}</span></div>`).join('')}
-      <div class="bill-tax">Subtotal: ₹${order.total}</div>
-      <div class="bill-tax">CGST (${cgst}%): ₹${cgstAmt}</div>
-      <div class="bill-tax">SGST (${sgst}%): ₹${sgstAmt}</div>
-      <div class="bill-row total"><span>Grand Total</span><span class="price">₹${grandTotal}</span></div>
-      <div class="bill-footer">Thank you for dining with us!<br>Food Nest — Your Food Companion 🧡</div>
-    </div>`;
+      ${order.items.map(i=>`<div class=\"bill-row\"><span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}</span><span>₹${i.price*i.qty}</span></div>`).join('')}
+      <div class=\"bill-tax\">Subtotal: ₹${order.total}</div>
+      <div class=\"bill-tax\">CGST (${cgst}%): ₹${cgstAmt}</div>
+      <div class=\"bill-tax\">SGST (${sgst}%): ₹${sgstAmt}</div>
+      <div class=\"bill-row total\"><span>Grand Total</span><span class=\"price\">₹${grandTotal}</span></div>
+      <div class=\"bill-footer\">Thank you for dining with us!<br>Food Nest — Your Food Companion 🧡</div>
+    </div>";
   activeBillOrder = {order,cgst,sgst,cgstAmt,sgstAmt,grandTotal:parseFloat(grandTotal)};
 }
 
@@ -1899,14 +1899,14 @@ async function renderHistory() {
   }
   document.getElementById('historyContainer').innerHTML = bills.map(b => {
     const tbl = tables.find(t=>t.id===b.tableId);
-    return `<div class="history-item">
-      <div class="history-icon">🧾</div>
-      <div class="history-info">
-        <div class="history-title">${tbl?esc(tbl.name):'Table'} · #${b.orderId.slice(-6).toUpperCase()}</div>
-        <div class="history-meta">${new Date(b.paidAt).toLocaleString()} · ${b.items.length} items</div>
+    return "<div class=\"history-item\">
+      <div class=\"history-icon\">🧾</div>
+      <div class=\"history-info\">
+        <div class=\"history-title\">${tbl?esc(tbl.name):'Table'} · #${b.orderId.slice(-6).toUpperCase()}</div>
+        <div class=\"history-meta\">${new Date(b.paidAt).toLocaleString()} · ${b.items.length} items</div>
       </div>
-      <div class="history-amount">₹${b.total}</div>
-    </div>`;
+      <div class=\"history-amount\">₹${b.total}</div>
+    </div>";
   }).join('');
 }
 

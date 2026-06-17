@@ -1765,7 +1765,7 @@ async function openDishDetail(dishId) {
   document.body.style.overflow='hidden';
   document.getElementById('dishDetailAddBtn').onclick = () => { custAddToCart(dishId); closeDishDetail(); };
   try {
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:`Give ONE short fun fact about the dish "${dish.name}" in 1-2 sentences. Just the fact, no preamble.`}]})});
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:"Give ONE short fun fact about the dish \"" + dish.name + "\" in 1-2 sentences. Just the fact, no preamble."}]})});
     const data = await resp.json();
     document.getElementById('dishFunFact').innerHTML = `<span style="font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)">🤔 Fun Fact</span><br>${data.choices[0].message.content.trim()}`;
   } catch(_) {

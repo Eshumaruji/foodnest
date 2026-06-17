@@ -1169,71 +1169,12 @@ async function renderTables() {
       b.status === 'confirmed' &&
       !b.isRejected &&
       b.bookedTableId
-    );
-
-  // Check if a table is booked within the next 30 mins or currently active booking
-  function getActiveBooking(tableId) {
-    return bookings.find(b => {
-      if (b.bookedTableId !== tableId) return false;
-      if (!b.date || !b.time) return false;
-      const bookingTime = new Date(`${b.date}T${b.time}`).getTime();
-      const windowStart = bookingTime - 30 * 60 * 1000;
-      const windowEnd   = bookingTime + 2 * 60 * 60 * 1000; // 2hr after booking
-      return now >= windowStart && now <= windowEnd;
+    )
+    .filter(b => {
+      const sid = b.sessionId || ('sess_book_' + b.id);
+      const isPaid = orders.some(o => o.sessionId === sid && o.status === 'paid');
+      return !isPaid;
     });
-  }
-
-  document.getElementById('tablesGrid').innerHTML = tables.map(t => {
-    const tSessions    = sessions.filter(s => s.tableId === t.id && (now - s.joinedAt) < 90000 && !s.denied && !s.kicked);
-    const tableOrders  = orders.filter(o => o.tableId === t.id);
-    const unpaidOrders = tableOrders.filter(o => o.status !== 'paid');
-    const paidOrders   = tableOrders.filter(o => o.status === 'paid');
-    const hasBillReq   = unpaidOrders.some(o => o.billRequested);
-    const hasOrders    = unpaidOrders.length > 0;
-    const recentlyPaid = paidOrders.length > 0 && unpaidOrders.length === 0 && tSessions.length === 0;
-    const occupied      = tSessions.length > 0;
-    const activeBooking = getActiveBooking(t.id);
-    const isBooked      = !!activeBooking && !occupied;
-
-    const statusClass = hasBillReq ? 'bill-requested'
-      : hasOrders   ? 'ordering'
-      : occupied    ? 'occupied'
-      : isBooked    ? 'booked'
-      : '';
-
-    const statusText = hasBillReq ? '🧾 Bill Requested'
-      : hasOrders   ? '🍽 Order in Progress'
-      : occupied    ? '👥 Occupied'
-      : isBooked    ? `📅 Booked${activeBooking.time ? ' at ' + activeBooking.time : ''}`
-      : '⬜ Available';
-
-    const statusColor = hasBillReq ? 'bill'
-      : occupied || hasOrders ? 'occ'
-      : isBooked ? 'booked-status'
-      : '';
-
-    return `<div class="table-card ${statusClass}" data-open-table="${t.id}">
-      <div class="table-num">🪑 ${esc(t.name)}</div>
-      <div class="table-status ${statusColor}">${statusText}</div>
-      ${t.capacity ? `<div class="table-viewers">Capacity: ${t.capacity}</div>` : ''}
-      ${isBooked ? `<div class="table-viewers" style="color:#1565C0;font-weight:600">👤 ${esc(activeBooking.customerName || activeBooking.customerEmail || 'Guest')} · ${activeBooking.guests || ''}</div>` : ''}
-      <div class="table-card-actions">
-        <button class="btn btn-secondary btn-xs" data-qr-table="${t.id}">📱 QR</button>
-        <button class="btn btn-secondary btn-xs" data-copy-table="${t.id}">🔗 Link</button>
-        <button class="btn btn-danger btn-xs" data-del-table="${t.id}">Del</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.querySelectorAll('[data-open-table]').forEach(card =>
-    card.addEventListener('click', e => { if (!e.target.closest('button')) openTableDetail(card.dataset.openTable); }));
-  document.querySelectorAll('[data-qr-table]').forEach(btn =>
-    btn.addEventListener('click', e => { e.stopPropagation(); openQrModal(btn.dataset.qrTable, false); }));
-  document.querySelectorAll('[data-copy-table]').forEach(btn =>
-    btn.addEventListener('click', e => { e.stopPropagation(); copyTableUrl(btn.dataset.copyTable); }));
-  document.querySelectorAll('[data-del-table]').forEach(btn =>
-    btn.addEventListener('click', e => { e.stopPropagation(); deleteTable(btn.dataset.delTable); }));
-}
 
 function openAddTableModal() {
   document.getElementById('tableNameInput').value='';

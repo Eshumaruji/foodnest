@@ -48,8 +48,6 @@
   window.__fsSetDoc = setDoc;
   window.__googleSignIn = async () => signInWithPopup(auth, googleProvider);
   window.__signOut = () => signOut(auth);
-  window.updateCart = updateCart;
-  window.proceedOrderPayment = proceedOrderPayment;
 
   onAuthStateChanged(auth, (user) => {
     window.__currentUser = user;
@@ -2043,21 +2041,20 @@ function updateCart(itemId, delta) {
 }
 window.updateCart = updateCart;
   
-  // Update pay button
-  const payBtn = subtotalEl ? subtotalEl.nextElementSibling : null;
-  if (payBtn) {
-    if (subtotal > 0) {
-      payBtn.disabled = false;
-      payBtn.style.opacity = '1';
-      payBtn.style.cursor = 'pointer';
-      payBtn.onclick = proceedOrderPayment;
-      payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">💳 Pay Bill ₹${subtotal} →</span>`;
-    } else {
-      payBtn.disabled = true;
-      payBtn.style.opacity = '0.5';
-      payBtn.style.cursor = 'not-allowed';
-      payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">Select items to pay →</span>`;
-    }
+// Update pay button
+const payBtn = subtotalEl ? subtotalEl.nextElementSibling : null;
+if (payBtn) {
+  if (subtotal > 0) {
+    payBtn.disabled = false;
+    payBtn.style.opacity = '1';
+    payBtn.style.cursor = 'pointer';
+    payBtn.onclick = proceedOrderPayment;
+    payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">💳 Pay Bill ₹${subtotal} →</span>`;
+  } else {
+    payBtn.disabled = true;
+    payBtn.style.opacity = '0.5';
+    payBtn.style.cursor = 'not-allowed';
+    payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">Select items to pay →</span>`;
   }
 }
 
@@ -2080,6 +2077,7 @@ function proceedOrderPayment() {
     document.getElementById('paymentSheet').classList.add('open');
   }, 300);
 }
+window.proceedOrderPayment = proceedOrderPayment;
 
 function closeOrderSheet() {
   document.getElementById('orderBackdrop').classList.remove('open');

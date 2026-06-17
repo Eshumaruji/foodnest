@@ -590,7 +590,7 @@ footer em { color: #5A3A1A; font-style: normal; }
   
   <div style="display:flex;align-items:center;gap:12px">
     <a class="header-tagline" href="https://www.youtube.com/watch?v=mD1WPJ_G7W4" style="text-decoration: none;">🌶️ IIT Guwahati and beyond</a>
-    <button onclick="openGetStarted();document.getElementById('login').scrollTop=999;" style="background:var(--saffron);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--deep)'" onmouseout="this.style.background='var(--saffron)'">Sign In →</button>
+    <button onclick="if(typeof window.__googleSignIn!=='function'){return;}openGetStarted();document.getElementById('login').scrollTop=999;" style="background:var(--saffron);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--deep)'" onmouseout="this.style.background='var(--saffron)'">Sign In →</button>
   </div>
 </header>
 
@@ -1154,18 +1154,22 @@ async function submitCustomer() {
 
 // ── LOGIN SUBMIT (Google only) ──
 async function submitLogin() {
+  // Guard: Firebase module may not have finished loading yet
+  if (typeof window.__googleSignIn !== 'function') {
+    showToast('Still loading, please try again in a moment…', 'red');
+    return;
+  }
+
   const btn = document.getElementById('loginGoogleBtn');
   const role = document.querySelector('input[name="loginRole"]:checked').value;
 
   btn.classList.add('loading'); btn.disabled = true;
 
-  // Save role to sessionStorage so we can retrieve it after redirect
   sessionStorage.setItem('fn_pending_login_role', role);
 
   try {
     let result;
     try {
-      // Try popup first (works on localhost and some browsers)
       result = await window.__googleSignIn();
     } catch (popupErr) {
       if (

@@ -1930,7 +1930,7 @@ async function initCustomerView() {
   // Table name
   const tables = await getTables(customerState.restUserId);
   const tbl = tables.find(t=>t.id===customerState.tableId);
-  document.getElementById('custTableBadge').textContent = `🪑 ${tbl?tbl.name:customerState.tableId}`;
+  document.getElementById('custTableBadge').textContent = "🪑 ${tbl?tbl.name:customerState.tableId}";
 
   // Register session
   const sessionObj = {
@@ -1969,7 +1969,7 @@ async function initCustomerView() {
 
   window.addEventListener('beforeunload', () => {
     navigator.sendBeacon&&navigator.sendBeacon('/api/noop');
-    const url = `https://firestore.googleapis.com/v1/projects/aahaarsaathi/databases/(default)/documents/sessions/${customerState.restUserId}/items/${customerState.sessionId}`;
+    const url = "https://firestore.googleapis.com/v1/projects/aahaarsaathi/databases/(default)/documents/sessions/${customerState.restUserId}/items/${customerState.sessionId}";
     fetch(url,{method:'DELETE',keepalive:true}).catch(()=>{});
     navigator.geolocation&&geoWatch&&navigator.geolocation.clearWatch(geoWatch);
     clearInterval(heartbeat);
@@ -2104,7 +2104,7 @@ function renderCustMenu() {
   let html='';
   catOrder.forEach(cat=>{
     if(!grouped[cat]?.length) return;
-    html+=`<div class="menu-section-title">${catLabels[cat]}<span class="badge">${grouped[cat].length}</span></div><div class="menu-grid">`;
+    html+="<div class=\"menu-section-title\">${catLabels[cat]}<span class=\"badge\">${grouped[cat].length}</span></div><div class=\"menu-grid\">";
     grouped[cat].forEach((d,i)=>{html+=custDishCardHtml(d,i);});
     html+=`</div>`;
   });

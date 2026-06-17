@@ -589,7 +589,7 @@ footer em { color: #5A3A1A; font-style: normal; }
   
   <div style="display:flex;align-items:center;gap:12px">
     <a class="header-tagline" href="https://www.youtube.com/watch?v=mD1WPJ_G7W4" style="text-decoration: none;">🌶️ IIT Guwahati and beyond</a>
-    <button onclick="if(typeof window.__googleSignIn!=='function'){return;}openGetStarted();document.getElementById('login').scrollTop=999;" style="background:var(--saffron);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--deep)'" onmouseout="this.style.background='var(--saffron)'">Sign In →</button>
+    <button onclick="openGetStarted();" style="background:var(--saffron);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--deep)'" onmouseout="this.style.background='var(--saffron)'">Sign In →</button>
   </div>
 </header>
 
@@ -1211,11 +1211,17 @@ async function handleLoginResult(result, role, btn) {
   const col   = role === 'owner' ? 'restaurants' : 'customers';
   const field = role === 'owner' ? 'ownerEmail'  : 'email';
 
-  const snap = await getDocs(q(collection(db, col), where(field, '==', email)));
+  let snap;
+  try {
+    snap = await getDocs(q(collection(db, col), where(field, '==', email)));
+  } catch (err) {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+    showToast('❌ Could not reach database. Please try again.', 'red');
+    return;
+  }
 
   if (snap.empty) {
     if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
-    // Sign out so state doesn't persist on reload
     if (window.__signOut) await window.__signOut();
     showToast(
       `❌ No ${role === 'owner' ? 'restaurant owner' : 'customer'} account found for ${email}. Please register first.`,
@@ -1226,6 +1232,21 @@ async function handleLoginResult(result, role, btn) {
 
   const userData = snap.docs[0].data();
 
+  // Build redirect URL before we sign out
+  let redirectUrl;
+  if (role === 'owner') {
+    const slug = (userData.restaurantName || '').trim().toLowerCase()
+      .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'restaurant';
+    const city = (userData.location || '').split(',').pop().trim().toLowerCase()
+      .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'india';
+    redirectUrl = `/${city}/${slug}/owner.html`;
+  } else {
+    const slug = (userData.name || '').trim().toLowerCase()
+      .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'customer';
+    redirectUrl = `/${slug}/customer.html`;
+  }
+
+  // Save session BEFORE signing out
   sessionStorage.setItem('fn_user', JSON.stringify({
     id: snap.docs[0].id,
     role,
@@ -1237,23 +1258,11 @@ async function handleLoginResult(result, role, btn) {
 
   showToast('✅ Signed in! Redirecting…', 'green');
 
-  // Sign out of Firebase Auth BEFORE redirecting so the auth state
-  // doesn't cause index.html to re-run login logic on next load
-  if (window.__signOut) await window.__signOut();
+  // Sign out silently — don't await, just fire and redirect immediately
+  if (window.__signOut) window.__signOut().catch(() => {});
 
-  setTimeout(() => {
-    if (role === 'owner') {
-      const slug = userData.restaurantName.trim().toLowerCase()
-        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'restaurant';
-      const city = (userData.location || '').split(',').pop().trim().toLowerCase()
-        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'india';
-      window.location.href = `/${city}/${slug}/owner.html`;
-    } else {
-      const slug = userData.name.trim().toLowerCase()
-        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'customer';
-      window.location.href = `/${slug}/customer.html`;
-    }
-  }, 1200);
+  // Redirect right away without setTimeout delay
+  window.location.href = redirectUrl;
 }
 
 // ── CHECK FOR REDIRECT RESULT ON PAGE LOAD ──

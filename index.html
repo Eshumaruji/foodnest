@@ -1153,7 +1153,6 @@ async function submitCustomer() {
 
 // ── LOGIN SUBMIT (Google only) ──
 async function submitLogin() {
-  // Guard: Firebase module may not have finished loading yet
   if (typeof window.__googleSignIn !== 'function') {
     showToast('Still loading, please try again in a moment…', 'red');
     return;
@@ -1163,31 +1162,20 @@ async function submitLogin() {
   const role = document.querySelector('input[name="loginRole"]:checked').value;
 
   btn.classList.add('loading'); btn.disabled = true;
-
   sessionStorage.setItem('fn_pending_login_role', role);
 
   try {
-    let result;
-    try {
-      result = await window.__googleSignIn();
-    } catch (popupErr) {
-      if (
-        popupErr.code === 'auth/popup-blocked' ||
-        popupErr.code === 'auth/popup-closed-by-user'
-      ) {
-        // Fall back to redirect (best for Vercel/production)
-        await window.__googleSignInRedirect();
-        // Page will reload — execution stops here
-        return;
-      }
-      throw popupErr;
-    }
-
+    const result = await window.__googleSignIn();
     await handleLoginResult(result, role, btn);
-
   } catch (err) {
     btn.classList.remove('loading'); btn.disabled = false;
-    if (err.code === 'auth/cancelled-popup-request') {
+
+    if (err.code === 'auth/popup-blocked') {
+      showToast('⚠️ Popup was blocked. Please allow popups for this site and try again.', 'red');
+    } else if (
+      err.code === 'auth/popup-closed-by-user' ||
+      err.code === 'auth/cancelled-popup-request'
+    ) {
       showToast('Sign-in cancelled.', '');
     } else {
       console.error(err);

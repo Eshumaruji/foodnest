@@ -884,19 +884,33 @@ function getHandoffUser() {
 // it is never trusted on its own to grant access to booking/payment actions.
 window.__onAuthReady = async (user) => {
   if (!user) {
-    // Check sessionStorage fallback for non-Google signups
     const session = JSON.parse(sessionStorage.getItem('fn_user') || 'null');
-    if (session && session.role === 'customer') {
-      // treat as logged in using session data
-      setupUserHeader({ displayName: session.name, email: session.email, photoURL: session.photoURL });
-      currentCustomer = { id: session.id, name: session.name, email: session.email };
+    if (session && session.role === 'customer' && session.id && session.email) {
+      document.getElementById('loginGate').classList.remove('show');
+      document.getElementById('mainApp').style.display = 'block';
+      setupUserHeader({
+        displayName: session.name || session.email.split('@')[0],
+        email: session.email,
+        photoURL: session.photoURL || null
+      });
+      currentCustomer = {
+        id: session.id,
+        name: session.name,
+        email: session.email
+      };
+      const city = session.city || 'your city';
+      document.getElementById('heroSub').textContent = `Discovering great food in ${city}`;
       await loadRestaurants();
       return;
     }
     showLoginGate();
     return;
   }
-  // ... rest of existing code
+  document.getElementById('loginGate').classList.remove('show');
+  document.getElementById('mainApp').style.display = 'block';
+  setupUserHeader(user);
+  await ensureCustomerProfile(user);
+  await loadRestaurants();
 };
 
 function showLoginGate() {

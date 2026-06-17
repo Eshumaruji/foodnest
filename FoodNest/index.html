@@ -1061,8 +1061,8 @@ async function submitOwner() {
     btn.classList.remove('loading'); btn.disabled = false;
     showToast('🎉 Restaurant registered successfully!', 'green');
     const slug = restName.trim().toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+  .replace(/\s+/g, '-')
+  .replace(/[^a-z0-9-]/g, '') || 'restaurant';
     const city = document.getElementById('restLocation').value.trim()
       .split(',').pop().trim().toLowerCase()
       .replace(/\s+/g, '-')
@@ -1134,7 +1134,7 @@ async function submitCustomer() {
       email: custEmail.trim().toLowerCase(),
     }));
     const slug = custName.trim().toLowerCase()
-      .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'customer';
     showSuccess('🍽️', 'Welcome Aboard!',
       'Taking you to your dashboard…',
       docRef.id.slice(0, 12).toUpperCase()
@@ -1230,7 +1230,7 @@ async function handleLoginResult(result, role, btn) {
   setTimeout(() => {
     if (role === 'owner') {
       const slug = userData.restaurantName.trim().toLowerCase()
-        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'restaurant';
       const city = (userData.location || '').split(',').pop().trim().toLowerCase()
         .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'india';
       window.location.href = `/${city}/${slug}/owner.html`;

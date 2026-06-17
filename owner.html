@@ -1802,10 +1802,10 @@ function renderOrderCardHtml(order, tables) {
         ? '<span class="order-status-chip chip-ready">✓ Ready</span>'
         : '<span class="order-status-chip chip-preparing">⏳ Preparing</span>';
   const itemRows = order.items.map(i =>
-    `<div class="order-item-row">
-      <span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}${i.done?' <span style="color:var(--success);font-size:0.65rem;font-weight:700">✓ Done</span>':''}</span>
+    "<div class=\"order-item-row\">
+      <span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}${i.done?' <span style=\"color:var(--success);font-size:0.65rem;font-weight:700\">✓ Done</span>':''}</span>
       <span class="price">₹${i.price*i.qty}</span>
-    </div>`
+    </div>"
   ).join('');
   const tbl = (tables||[]).find(t=>t.id===order.tableId);
   return `<div class="order-card ${statusClass}">

@@ -162,10 +162,17 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 /* ── BILL MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:500;opacity:0;pointer-events:none;transition:opacity 0.25s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal-sheet{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.93);background:#fff;border-radius:22px;z-index:501;padding:28px;width:min(520px,94vw);max-height:90vh;overflow-y:auto;transition:transform 0.25s}
+.modal-sheet{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.93);background:#fff;border-radius:24px;z-index:501;padding:0;width:min(540px,96vw);max-height:92vh;overflow-y:auto;transition:transform 0.25s;box-shadow:0 24px 80px rgba(0,0,0,0.18)}
 .modal-overlay.open .modal-sheet{transform:translate(-50%,-50%) scale(1)}
-.modal-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.2rem;color:var(--dark);margin-bottom:4px}
-.modal-sub{color:var(--muted);font-size:0.78rem;margin-bottom:20px}
+.modal-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.15rem;color:var(--dark);margin-bottom:2px}
+.modal-sub{color:var(--muted);font-size:0.75rem;margin-bottom:0}
+.modal-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.06);border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:background 0.15s;z-index:2}
+.modal-close:hover{background:rgba(0,0,0,0.12)}
+.modal-header{background:linear-gradient(135deg,var(--dark),#2D1A0A);padding:20px 24px 16px;border-radius:24px 24px 0 0;position:relative}
+.modal-body{padding:20px 24px 28px}
+.modal-section-label{font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--saffron);margin-bottom:8px;margin-top:18px;display:flex;align-items:center;gap:6px}
+.modal-section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.modal-section-label:first-child{margin-top:0}
 .modal-close{position:absolute;top:16px;right:16px;background:#F0E8DC;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center}
 
 /* ── BILL PREVIEW ── */
@@ -565,58 +572,96 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 <!-- ════════════ MODALS ════════════ -->
 <div class="modal-overlay" id="dishModalOverlay">
   <div class="modal-sheet" id="dishModal">
-    <button class="modal-close" id="closeDishModalBtn">✕</button>
-    <div class="modal-title" id="dishModalTitle">Add New Dish</div>
-    <div class="modal-sub">Fill in the details for the menu item</div>
-    <input type="hidden" id="editDishId"/>
-    <div class="form-group">
-      <label class="form-label">Dish Name *</label>
-      <input class="form-input" id="dishName" placeholder="e.g. Masala Dosa"/>
+    <div class="modal-header">
+      <button class="modal-close" id="closeDishModalBtn" style="background:rgba(255,255,255,0.12);color:#fff">✕</button>
+      <div class="modal-title" id="dishModalTitle" style="color:#fff">Add New Dish</div>
+      <div class="modal-sub" style="color:#B0A090;margin-top:3px">Fill in the details for this menu item</div>
     </div>
-    <div class="form-row">
+    <div class="modal-body">
+      <input type="hidden" id="editDishId"/>
+
+      <div class="modal-section-label">Basic Info</div>
       <div class="form-group">
-        <label class="form-label">Price (₹) *</label>
-        <input class="form-input" id="dishPrice" type="number" placeholder="99"/>
+        <label class="form-label">Dish Name *</label>
+        <input class="form-input" id="dishName" placeholder="e.g. Masala Dosa, Kung Pao Chicken…"/>
       </div>
-      <div class="form-group">
-        <label class="form-label">Cook Time</label>
-        <input class="form-input" id="dishCookTime" placeholder="15 mins"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Price (₹) *</label>
+          <input class="form-input" id="dishPrice" type="number" placeholder="149"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cook Time</label>
+          <input class="form-input" id="dishCookTime" placeholder="e.g. 15 mins"/>
+        </div>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Category</label>
-        <select class="form-select" id="dishCategory">
-          <option value="regional">Regional</option>
-          <option value="signature">Signature ⭐</option>
-          <option value="daily">Daily Special 📅</option>
-          <option value="festive">Festive 🎉</option>
-        </select>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Cuisine / Category</label>
+          <select class="form-select" id="dishCategory">
+            <optgroup label="— Specials —">
+              <option value="signature">⭐ Signature</option>
+              <option value="daily">📅 Daily Special</option>
+              <option value="festive">🎉 Festive</option>
+            </optgroup>
+            <optgroup label="— Indian —">
+              <option value="north_indian">🍛 North Indian</option>
+              <option value="south_indian" selected>🥥 South Indian</option>
+              <option value="coastal">🦞 Coastal / Seafood</option>
+              <option value="street_food">🌮 Street Food</option>
+              <option value="mughlai">🫕 Mughlai</option>
+              <option value="rajasthani">🌵 Rajasthani</option>
+              <option value="bengali">🐟 Bengali</option>
+            </optgroup>
+            <optgroup label="— Asian —">
+              <option value="chinese">🥢 Chinese</option>
+              <option value="thai">🌿 Thai</option>
+              <option value="japanese">🍱 Japanese</option>
+              <option value="korean">🌶 Korean</option>
+            </optgroup>
+            <optgroup label="— Global —">
+              <option value="italian">🍝 Italian</option>
+              <option value="continental">🥗 Continental</option>
+              <option value="mexican">🌯 Mexican</option>
+              <option value="american">🍔 American</option>
+              <option value="mediterranean">🫒 Mediterranean</option>
+            </optgroup>
+            <optgroup label="— Other —">
+              <option value="dessert">🍮 Dessert</option>
+              <option value="beverages">🥤 Beverages</option>
+              <option value="regional">🏡 Other / Regional</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Image (emoji or URL)</label>
+          <input class="form-input" id="dishImage" placeholder="🍛 or https://…"/>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Image (emoji or URL)</label>
-        <input class="form-input" id="dishImage" placeholder="🍛 or https://..."/>
+
+      <div class="modal-section-label">Availability</div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="margin-bottom:8px">Serving Time <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">(select all that apply)</span></label>
+        <div class="check-group" id="dishSlotsGroup">
+          <label class="check-item"><input type="checkbox" value="Breakfast"/>☕ Breakfast</label>
+          <label class="check-item"><input type="checkbox" value="Lunch"/>🌤 Lunch</label>
+          <label class="check-item"><input type="checkbox" value="Evening Snack"/>🌇 Evening</label>
+          <label class="check-item"><input type="checkbox" value="Dinner"/>🌙 Dinner</label>
+          <label class="check-item"><input type="checkbox" value="All Day"/>☀️ All Day</label>
+        </div>
       </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Available Slots</label>
-      <div class="check-group" id="dishSlotsGroup">
-        <label class="check-item"><input type="checkbox" value="Breakfast"/>☕ Breakfast</label>
-        <label class="check-item"><input type="checkbox" value="Lunch"/>🌤 Lunch</label>
-        <label class="check-item"><input type="checkbox" value="Evening Snack"/>🌇 Evening</label>
-        <label class="check-item"><input type="checkbox" value="Dinner"/>🌙 Dinner</label>
-        <label class="check-item"><input type="checkbox" value="All Day"/>☀️ All Day</label>
+
+      <div class="modal-section-label">Ingredients</div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Separate with commas <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">e.g. rice, coconut milk, lemongrass, galangal</span></label>
+        <textarea class="form-textarea" id="ingRawInput" placeholder="paneer, tomato, onion, cream, garam masala, ginger, garlic" style="min-height:64px;resize:none"></textarea>
+        <div id="ingTagPreview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:0"></div>
       </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Ingredients (press Enter to add)</label>
-      <div class="tag-input-wrap" id="ingTagWrap">
-        <input id="ingTagInput" class="tag-input" placeholder="Type ingredient + Enter"/>
+
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-primary" style="flex:1;padding:13px 20px;font-size:0.85rem" id="saveDishBtn">✓ Save Dish</button>
+        <button class="btn btn-secondary" id="cancelDishBtn">Cancel</button>
       </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:8px">
-      <button class="btn btn-primary" style="flex:1" id="saveDishBtn">Save Dish</button>
-      <button class="btn btn-secondary" id="cancelDishBtn">Cancel</button>
     </div>
   </div>
 </div>
@@ -882,9 +927,14 @@ function wireEvents() {
   document.getElementById('closeDishModalBtn').addEventListener('click', closeDishModal);
   document.getElementById('cancelDishBtn').addEventListener('click', closeDishModal);
   document.getElementById('saveDishBtn').addEventListener('click', saveDish);
-  document.getElementById('ingTagInput').addEventListener('keydown', handleTagInput);
+  const ingRawEl = document.getElementById('ingRawInput');
+  if (ingRawEl) ingRawEl.addEventListener('input', syncIngTagsFromTextarea);
   document.querySelectorAll('#dishSlotsGroup .check-item').forEach(el => {
-    el.addEventListener('click', () => el.classList.toggle('checked'));
+    el.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      el.classList.toggle('checked');
+      el.querySelector('input').checked = el.classList.contains('checked');
+    });
   });
 
   document.getElementById('addTableBtn').addEventListener('click', openAddTableModal);
@@ -995,11 +1045,47 @@ async function renderOverview() {
     `<div class="empty-state"><div class="e-icon">👀</div><h3>No live viewers</h3><p>Customers will appear here when they open a table link</p></div>`;
 
   const billReqs = orders.filter(o=>o.billRequested&&o.status!=='paid');
+    let mostSold = null, leastSold = null;
+  try {
+    const menu = await getMenu(currentUser.id);
+    const salesSnap = await getDoc(doc(fdb, 'dishSales', currentUser.id));
+    if (salesSnap.exists() && menu.length) {
+      const counts = salesSnap.data().counts || {};
+      // Only rank dishes that have at least one sale
+      const ranked = menu
+        .map(d => ({ name: d.name, image: d.image || '🍛', count: counts[d.id] || 0 }))
+        .filter(d => d.count > 0)
+        .sort((a, b) => b.count - a.count);
+      if (ranked.length) {
+        mostSold  = ranked[0];
+        leastSold = ranked[ranked.length - 1];
+      }
+    }
+  } catch(_) {}
+
+  const soldHtml = mostSold ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--success)"></div>
+        <div style="font-size:1.5rem;margin-bottom:4px">${mostSold.image && mostSold.image.length <= 4 ? mostSold.image : '🍛'}</div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:0.95rem;color:var(--dark)">${esc(mostSold.name)}</div>
+        <div style="font-size:0.68rem;color:var(--success);font-family:'Montserrat',sans-serif;font-weight:700;margin-top:3px">🏆 Most Sold · ${mostSold.count} orders</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#FFC107"></div>
+        <div style="font-size:1.5rem;margin-bottom:4px">${leastSold.image && leastSold.image.length <= 4 ? leastSold.image : '🍛'}</div>
+        <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:0.95rem;color:var(--dark)">${esc(leastSold.name)}</div>
+        <div style="font-size:0.68rem;color:#E65100;font-family:'Montserrat',sans-serif;font-weight:700;margin-top:3px">📉 Least Sold · ${leastSold.count} orders</div>
+      </div>
+    </div>` : `<div style="font-size:0.78rem;color:var(--muted);margin-top:10px;padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:12px;font-family:'Montserrat',sans-serif">No sales data yet — dish rankings will appear after customers place orders.</div>`;
+
   document.getElementById('quickSummary').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="stat-card red"><div class="stat-num">${billReqs.length}</div><div class="stat-label">🧾 Bill Requests</div></div>
       <div class="stat-card"><div class="stat-num">${tables.length}</div><div class="stat-label">🪑 Total Tables</div></div>
-    </div>`;
+    </div>
+    <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.88rem;color:var(--dark);margin-top:16px;margin-bottom:4px">🍽 Dish Performance</div>
+    ${soldHtml}`;
 }
 
 // ── MENU EDITOR ───────────────────────────────────────────────
@@ -1051,26 +1137,30 @@ async function deleteDish(id) {
   renderMenuList(); showToast('Dish deleted');
 }
 
-function handleTagInput(e) {
-  if (e.key==='Enter'||e.key===',') {
-    e.preventDefault();
-    const val = e.target.value.trim().replace(/,$/,'');
-    if (!val) return;
-    ingTags.push(val); e.target.value=''; renderTagWrap();
-  }
+function syncIngTagsFromTextarea() {
+  const raw = (document.getElementById('ingRawInput')?.value || '');
+  ingTags = raw.split(',').map(s => s.trim()).filter(Boolean);
+  renderIngPreview();
 }
-function renderTagWrap() {
-  const wrap = document.getElementById('ingTagWrap');
-  const input = document.getElementById('ingTagInput');
-  wrap.innerHTML = ingTags.map((t,i) => `<span class="tag-chip">${esc(t)}<button type="button" data-tag-idx="${i}">×</button></span>`).join('');
-  wrap.appendChild(input);
-  wrap.querySelectorAll('[data-tag-idx]').forEach(btn =>
-    btn.addEventListener('click', () => { ingTags.splice(parseInt(btn.dataset.tagIdx),1); renderTagWrap(); }));
+
+function renderIngPreview() {
+  const preview = document.getElementById('ingTagPreview');
+  if (!preview) return;
+  if (!ingTags.length) { preview.innerHTML = ''; return; }
+  preview.innerHTML = ingTags.map(t =>
+    `<span class="tag-chip" style="pointer-events:none">${esc(t)}</span>`
+  ).join('');
 }
+
+function renderTagWrap() {}
+function handleTagInput() {}
 
 async function openDishModal(id) {
   ingTags = [];
   ['dishName','dishPrice','dishCookTime','dishImage','editDishId'].forEach(f => document.getElementById(f).value='');
+  const ingRawInput = document.getElementById('ingRawInput');
+  if (ingRawInput) ingRawInput.value = '';
+  renderIngPreview();
   document.getElementById('dishCategory').value = 'regional';
   document.querySelectorAll('#dishSlotsGroup .check-item').forEach(el => el.classList.remove('checked'));
   renderTagWrap();
@@ -1090,7 +1180,11 @@ async function openDishModal(id) {
           if (el.querySelector('input').value===slot) el.classList.add('checked');
         });
       });
-      ingTags = [...(dish.ingredients||[])]; renderTagWrap();
+      ingTags = [];
+      ['dishName','dishPrice','dishCookTime','dishImage','editDishId'].forEach(f => document.getElementById(f).value='');
+      const ingRawInput = document.getElementById('ingRawInput');
+      if (ingRawInput) ingRawInput.value = '';
+      renderIngPreview();
     }
   } else {
     document.getElementById('dishModalTitle').textContent = 'Add New Dish';
@@ -1106,13 +1200,14 @@ async function saveDish() {
   const editId = document.getElementById('editDishId').value;
   const slots = [];
   document.querySelectorAll('#dishSlotsGroup .check-item.checked').forEach(el => slots.push(el.querySelector('input').value));
+  syncIngTagsFromTextarea(); 
   const dish = {
-    id: editId||'dish_'+Date.now(), name, price,
-    cookTime: document.getElementById('dishCookTime').value.trim(),
-    image: document.getElementById('dishImage').value.trim()||'🍛',
-    category: document.getElementById('dishCategory').value,
-    availableSlots: slots, ingredients: [...ingTags], available: true, createdAt: Date.now()
-  };
+      id: editId||'dish_'+Date.now(), name, price,
+      cookTime: document.getElementById('dishCookTime').value.trim(),
+      image: document.getElementById('dishImage').value.trim()||'🍛',
+      category: document.getElementById('dishCategory').value,
+      availableSlots: slots, ingredients: [...ingTags], available: true, createdAt: Date.now()
+    };
   if (!ingTags.length) {
     try {
       const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:`List the basic ingredients of "${name}" as a JSON array of strings (max 8 items). Just the array, no text.`}]})});
@@ -2314,8 +2409,17 @@ async function custPlaceOrder(){
   };
   await saveOrderFB(customerState.restUserId, order);
   await updateSessionFB(customerState.restUserId, customerState.sessionId, {
-    ordersPlaced:true, lastOrderAt:Date.now(), cartSnapshot:items, orderStatus:'preparing'
-  });
+      ordersPlaced:true, lastOrderAt:Date.now(), cartSnapshot:items, orderStatus:'preparing'
+    });
+  try {
+    const dishSalesRef = doc(fdb, 'dishSales', customerState.restUserId);
+    const existing = await getDoc(dishSalesRef);
+    const counts = existing.exists() ? (existing.data().counts || {}) : {};
+    items.forEach(it => {
+      counts[it.id] = (counts[it.id] || 0) + it.qty;
+    });
+    await setDoc(dishSalesRef, { counts, updatedAt: Date.now() });
+  } catch(_) {}
   if(!customerState.placedOrders) customerState.placedOrders=[];
   customerState.placedOrders.push({ orderId, items, total, status:'preparing', kitchenStatus:'pending', placedAt:Date.now() });
   customerState.cart=[];

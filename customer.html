@@ -48,6 +48,8 @@
   window.__fsSetDoc = setDoc;
   window.__googleSignIn = async () => signInWithPopup(auth, googleProvider);
   window.__signOut = () => signOut(auth);
+  window.updateCart = updateCart;
+  window.proceedOrderPayment = proceedOrderPayment;
 
   onAuthStateChanged(auth, (user) => {
     window.__currentUser = user;
@@ -2037,30 +2039,9 @@ function updateCart(itemId, delta) {
   const current = orderCart[itemId] || 0;
   const newQty = Math.max(0, current + delta);
   if (newQty === 0) delete orderCart[itemId]; else orderCart[itemId] = newQty;
-  
-  // Update qty display without full re-render
-  const qtyEl = document.getElementById('qty_' + itemId);
-  if (qtyEl) qtyEl.textContent = newQty;
-  
-  // Re-render subtotal/buttons
-  const subtotal = Object.entries(orderCart).reduce((s, [id, q]) => {
-    const item = currentMenuItems.find(m => m.id === id);
-    return s + (item ? item.price * q : 0);
-  }, 0);
-  const itemCount = Object.values(orderCart).reduce((s, q) => s + q, 0);
-  
-  const subtotalEl = document.querySelector('.order-subtotal');
-  if (subtotalEl) {
-    subtotalEl.innerHTML = `
-      <div class="order-subtotal-row">
-        <span class="order-subtotal-label">Items selected</span>
-        <span class="order-subtotal-val">${itemCount}</span>
-      </div>
-      <div class="order-total-row">
-        <span class="order-total-label">Bill Total</span>
-        <span class="order-total-val">₹${subtotal}</span>
-      </div>`;
-  }
+  renderOrderSheet();
+}
+window.updateCart = updateCart;
   
   // Update pay button
   const payBtn = subtotalEl ? subtotalEl.nextElementSibling : null;

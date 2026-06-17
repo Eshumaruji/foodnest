@@ -107,6 +107,7 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 .table-card.occupied::before{background:var(--saffron)}
 .table-card.ordering::before{background:var(--success);animation:pulse-bar 1.5s ease-in-out infinite}
 .table-card.bill-requested::before{background:var(--danger);animation:pulse-bar 0.8s ease-in-out infinite}
+.table-card.booked::before { background: #1565C0; animation: pulse-bar 2s ease-in-out infinite; }
 @keyframes pulse-bar{0%,100%{opacity:1}50%{opacity:0.4}}
 .table-card:hover{border-color:var(--saffron);box-shadow:var(--shadow)}
 .table-num{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.35rem;color:var(--dark)}
@@ -114,6 +115,7 @@ header{background:var(--dark);padding:0 20px;height:62px;display:flex;align-item
 .table-status.occ{color:var(--saffron);font-weight:700}
 .table-status.bill{color:var(--danger);font-weight:700}
 .table-status.paid-status{color:var(--success);font-weight:700}
+.table-status.booked-status { color: #1565C0; font-weight: 700; }
 .table-card.paid::before{background:var(--success)}
 .table-viewers{font-size:0.68rem;color:var(--muted);margin-top:6px}
 .table-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
@@ -1128,43 +1130,76 @@ async function saveDish() {
 
 // ── TABLES ────────────────────────────────────────────────────
 async function renderTables() {
-  const [tables,sessions,orders] = await Promise.all([getTables(currentUser.id),getSessions(currentUser.id),getOrders(currentUser.id)]);
+  const [tables, sessions, orders, bookingsSnap] = await Promise.all([
+    getTables(currentUser.id),
+    getSessions(currentUser.id),
+    getOrders(currentUser.id),
+    getDocs(collection(fdb, 'bookings'))
+  ]);
+
   document.getElementById('tableCountBadge').textContent = tables.length;
   if (!tables.length) {
     document.getElementById('tablesGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="e-icon">🪑</div><h3>No tables yet</h3></div>';
     return;
   }
+
   const now = Date.now();
+  const bookings = bookingsSnap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(b =>
+      (b.restaurantId === currentUser.id || b.restaurantName === currentUser.name) &&
+      b.status === 'confirmed' &&
+      !b.isRejected &&
+      b.bookedTableId
+    );
+
+  // Check if a table is booked within the next 30 mins or currently active booking
+  function getActiveBooking(tableId) {
+    return bookings.find(b => {
+      if (b.bookedTableId !== tableId) return false;
+      if (!b.date || !b.time) return false;
+      const bookingTime = new Date(`${b.date}T${b.time}`).getTime();
+      const windowStart = bookingTime - 30 * 60 * 1000;
+      const windowEnd   = bookingTime + 2 * 60 * 60 * 1000; // 2hr after booking
+      return now >= windowStart && now <= windowEnd;
+    });
+  }
+
   document.getElementById('tablesGrid').innerHTML = tables.map(t => {
-    const tSessions    = sessions.filter(s=>s.tableId===t.id&&(now-s.joinedAt)<90000&&!s.denied&&!s.kicked);
-    const tableOrders  = orders.filter(o=>o.tableId===t.id);
-    const unpaidOrders = tableOrders.filter(o=>o.status!=='paid');
-    const paidOrders   = tableOrders.filter(o=>o.status==='paid');
-    const hasBillReq   = unpaidOrders.some(o=>o.billRequested);
+    const tSessions    = sessions.filter(s => s.tableId === t.id && (now - s.joinedAt) < 90000 && !s.denied && !s.kicked);
+    const tableOrders  = orders.filter(o => o.tableId === t.id);
+    const unpaidOrders = tableOrders.filter(o => o.status !== 'paid');
+    const paidOrders   = tableOrders.filter(o => o.status === 'paid');
+    const hasBillReq   = unpaidOrders.some(o => o.billRequested);
     const hasOrders    = unpaidOrders.length > 0;
     const recentlyPaid = paidOrders.length > 0 && unpaidOrders.length === 0 && tSessions.length === 0;
     const occupied     = tSessions.length > 0;
+    const activeBooking = getActiveBooking(t.id);
+    const isBooked     = !!activeBooking && !occupied;
 
     const statusClass = recentlyPaid ? 'paid'
-      : hasBillReq ? 'bill-requested'
-      : hasOrders  ? 'ordering'
-      : occupied   ? 'occupied'
+      : hasBillReq  ? 'bill-requested'
+      : hasOrders   ? 'ordering'
+      : occupied    ? 'occupied'
+      : isBooked    ? 'booked'
       : '';
 
     const statusText = recentlyPaid ? '✅ Recently Paid'
-      : hasBillReq ? '🧾 Bill Requested'
-      : hasOrders  ? '🍽 Order in Progress'
-      : occupied   ? '👥 Occupied'
+      : hasBillReq  ? '🧾 Bill Requested'
+      : hasOrders   ? '🍽 Order in Progress'
+      : occupied    ? '👥 Occupied'
+      : isBooked    ? `📅 Booked${activeBooking.time ? ' at ' + activeBooking.time : ''}`
       : '⬜ Available';
 
     const statusColor = hasBillReq ? 'bill'
       : occupied || hasOrders ? 'occ'
+      : isBooked ? 'booked-status'
       : '';
 
     return `<div class="table-card ${statusClass}" data-open-table="${t.id}">
       <div class="table-num">🪑 ${esc(t.name)}</div>
       <div class="table-status ${statusColor}">${statusText}</div>
-      ${t.capacity?`<div class="table-viewers">Capacity: ${t.capacity}</div>`:''}
+      ${t.capacity ? `<div class="table-viewers">Capacity: ${t.capacity}</div>` : ''}
+      ${isBooked ? `<div class="table-viewers" style="color:#1565C0;font-weight:600">👤 ${esc(activeBooking.customerName || activeBooking.customerEmail || 'Guest')} · ${activeBooking.guests || ''}</div>` : ''}
       <div class="table-card-actions">
         <button class="btn btn-secondary btn-xs" data-qr-table="${t.id}">📱 QR</button>
         <button class="btn btn-secondary btn-xs" data-copy-table="${t.id}">🔗 Link</button>
@@ -1174,7 +1209,7 @@ async function renderTables() {
   }).join('');
 
   document.querySelectorAll('[data-open-table]').forEach(card =>
-    card.addEventListener('click', e => { if(!e.target.closest('button')) openTableDetail(card.dataset.openTable); }));
+    card.addEventListener('click', e => { if (!e.target.closest('button')) openTableDetail(card.dataset.openTable); }));
   document.querySelectorAll('[data-qr-table]').forEach(btn =>
     btn.addEventListener('click', e => { e.stopPropagation(); openQrModal(btn.dataset.qrTable, false); }));
   document.querySelectorAll('[data-copy-table]').forEach(btn =>
@@ -1546,23 +1581,96 @@ function closeTableDetail() { document.getElementById('tableDetailOverlay').clas
 
 // ── BOOKINGS ─────────────────────────────────────────────────
 async function renderBookings() {
-  const snap = await getDocs(collection(fdb,'bookings'));
-  const bookings = snap.docs.map(d=>({id:d.id,...d.data()}))
-    .filter(b=>b.restaurantId===currentUser.id||b.restaurantName===currentUser.name)
-    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const snap = await getDocs(collection(fdb, 'bookings'));
+  const bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(b => b.restaurantId === currentUser.id || b.restaurantName === currentUser.name)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
   document.getElementById('bookingsCount').textContent = bookings.length;
+
   if (!bookings.length) {
     document.getElementById('bookingsContainer').innerHTML =
       '<div class="empty-state"><div class="e-icon">📅</div><h3>No advance bookings yet</h3></div>';
     return;
   }
-  document.getElementById('bookingsContainer').innerHTML = bookings.map(b=>{
-    const isPast = b.date&&new Date(b.date)<new Date();
-    return `<div class="order-card" style="margin-bottom:12px">
-      <div class="order-card-header"><div><div class="order-card-title">👤 ${esc(b.customerName||'Guest')} · ${b.guests||'—'}</div><div class="order-card-meta">📅 ${b.date||'—'} at ${b.time||'—'} · ${isPast?'<span style="color:var(--muted)">Past</span>':'<span style="color:var(--success);font-weight:700">Upcoming</span>'}</div></div><span class="order-status-chip chip-ready">₹${b.totalPaid||0} paid</span></div>
-      ${b.dishes?`<div style="background:var(--cream);border-radius:10px;padding:10px 12px;font-size:0.75rem;color:var(--ink)">🍽️ <strong>Pre-orders:</strong> ${esc(b.dishes)}</div>`:''}
+
+  // Auto-assign tables to bookings that don't have one yet
+  const tables = await getTables(currentUser.id);
+  for (const b of bookings) {
+    if (!b.bookedTableId && !b.isRejected && b.status === 'confirmed' && b.guestCount) {
+      // Find smallest table that fits the guest count
+      const suitable = tables
+        .filter(t => t.capacity >= b.guestCount)
+        .sort((a, z) => a.capacity - z.capacity);
+
+      // Check that table isn't already assigned to another booking at this time
+      const assigned = suitable.find(t => {
+        const conflict = bookings.find(ob =>
+          ob.id !== b.id &&
+          ob.bookedTableId === t.id &&
+          ob.date === b.date &&
+          ob.time === b.time &&
+          !ob.isRejected
+        );
+        return !conflict;
+      });
+
+      if (assigned) {
+        await updateDoc(doc(fdb, 'bookings', b.id), { bookedTableId: assigned.id, bookedTableName: assigned.name });
+        b.bookedTableId   = assigned.id;
+        b.bookedTableName = assigned.name;
+      }
+    }
+  }
+
+  document.getElementById('bookingsContainer').innerHTML = bookings.map(b => {
+    const isPast     = b.date && new Date(b.date) < new Date();
+    const isRejected = b.isRejected;
+    const chipStyle  = isRejected
+      ? 'background:#FFF0EE;color:var(--danger);border:1px solid #FFD0CC'
+      : isPast
+        ? 'background:rgba(255,255,255,0.08);color:var(--muted);border:1px solid rgba(255,255,255,0.1)'
+        : 'background:#E8F5EE;color:var(--success);border:1px solid #B8DFC8';
+    const chipLabel  = isRejected ? '❌ Rejected' : isPast ? '⏰ Past' : '✅ Upcoming';
+
+    return `<div class="order-card" style="margin-bottom:12px;${isRejected ? 'opacity:0.6' : ''}">
+      <div class="order-card-header">
+        <div>
+          <div class="order-card-title">👤 ${esc(b.customerName || b.customerEmail || 'Guest')} · ${b.guests || '—'}</div>
+          <div class="order-card-meta">📅 ${b.date || '—'} at ${b.time || '—'}</div>
+          ${b.bookedTableName ? `<div class="order-card-meta" style="color:#1565C0;font-weight:700;margin-top:3px">🪑 Assigned: ${esc(b.bookedTableName)}</div>` : '<div class="order-card-meta" style="color:var(--muted);margin-top:3px">🪑 No table assigned (add tables with matching capacity)</div>'}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="order-status-chip" style="${chipStyle}">${chipLabel}</span>
+          <span style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.82rem;color:var(--saffron)">₹${b.totalPaid || 0}</span>
+        </div>
+      </div>
+      ${b.dishes ? `<div style="background:var(--cream);border-radius:10px;padding:10px 12px;font-size:0.75rem;color:var(--ink);margin-bottom:8px">🍽️ <strong>Pre-orders:</strong> ${esc(b.dishes)}</div>` : ''}
+      ${b.occasion ? `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">🎉 ${esc(b.occasion)}</div>` : ''}
+      ${!isRejected ? `
+      <div class="order-actions">
+        <button class="btn btn-danger btn-sm" data-reject-booking="${b.id}">❌ Reject & Notify Customer</button>
+      </div>` : `
+      <div style="font-size:0.72rem;color:var(--danger);margin-top:6px;font-family:'Montserrat',sans-serif;font-weight:600">
+        Customer has been notified of rejection.
+      </div>`}
     </div>`;
   }).join('');
+
+  document.querySelectorAll('[data-reject-booking]').forEach(btn =>
+    btn.addEventListener('click', () => rejectBooking(btn.dataset.rejectBooking)));
+}
+
+async function rejectBooking(bookingId) {
+  if (!confirm('Reject this booking? The customer will be notified.')) return;
+  await updateDoc(doc(fdb, 'bookings', bookingId), {
+    isRejected: true,
+    rejectedAt: Date.now(),
+    rejectedBy: currentUser.id
+  });
+  showToast('Booking rejected — customer notified.', 'red');
+  renderBookings();
+  renderTables();
 }
 
 // ── KICK / BLOCK ──────────────────────────────────────────────

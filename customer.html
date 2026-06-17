@@ -11,10 +11,9 @@
 <!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, updateDoc, increment, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, addDoc, serverTimestamp, doc, updateDoc, increment, getDoc, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  // Unified with index.html / owner.html — aahaarsaathi project
   const firebaseConfig = {
     apiKey: "AIzaSyDu6WAndsds6PNmTPe7Oq7kFr6-fl8sOe4",
     authDomain: "aahaarsaathi.firebaseapp.com",
@@ -43,6 +42,8 @@
   window.__fsGetDoc = getDoc;
   window.__fsQuery = query;
   window.__fsWhere = where;
+  window.__fsOnSnapshot = onSnapshot;
+  window.__fsOrderBy = orderBy;
 
   window.__googleSignIn = async () => signInWithPopup(auth, googleProvider);
   window.__signOut = () => signOut(auth);
@@ -104,11 +105,32 @@ header {
   cursor: pointer; overflow: hidden; flex-shrink: 0;
 }
 .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── NOTIFICATION BELL ── */
+.notif-bell-btn {
+  position: relative; background: none; border: none;
+  cursor: pointer; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: background 0.18s;
+}
+.notif-bell-btn:hover { background: rgba(255,255,255,0.06); }
+.notif-bell-icon { font-size: 1.2rem; }
+.notif-badge {
+  position: absolute; top: 2px; right: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--danger); color: #fff;
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.58rem; display: none; align-items: center; justify-content: center;
+  border: 2px solid #0D0D0D;
+}
+.notif-badge.show { display: flex; }
+
 .signout-btn {
   background: none; border: 1px solid rgba(255,255,255,0.12);
   color: #7A6A5A; border-radius: 50px; padding: 6px 14px;
   font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 0.68rem;
-  cursor: pointer; transition: all 0.18s;
+  cursor: pointer; transition: all 0.18s; text-decoration: none;
+  display: inline-flex; align-items: center;
 }
 .signout-btn:hover { border-color: var(--saffron); color: var(--saffron); }
 
@@ -240,13 +262,9 @@ header {
   margin-top: 12px; padding-top: 12px;
   border-top: 1px solid #242424;
 }
-.occupancy-bar {
-  flex: 1;
-}
+.occupancy-bar { flex: 1; }
 .occupancy-label { font-size: 0.62rem; color: #5A4A3A; font-family: 'Montserrat', sans-serif; font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; }
-.occupancy-track {
-  height: 5px; background: #2A2A2A; border-radius: 50px; overflow: hidden;
-}
+.occupancy-track { height: 5px; background: #2A2A2A; border-radius: 50px; overflow: hidden; }
 .occupancy-fill { height: 100%; border-radius: 50px; transition: width 0.5s ease; }
 .occupancy-fill.low { background: var(--success); }
 .occupancy-fill.mid { background: #F39C12; }
@@ -263,12 +281,19 @@ header {
 .book-btn.disabled { background: #2A2A2A; color: #5A4A3A; cursor: not-allowed; }
 .price-range-chip { font-size: 0.7rem; }
 
+/* ── MENU BTN ON CARD ── */
+.menu-btn {
+  background: rgba(255,255,255,0.06); color: #9A8A7A;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; padding: 7px 12px;
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.62rem; cursor: pointer; margin-left: 6px;
+  transition: all 0.18s; white-space: nowrap;
+}
+.menu-btn:hover { border-color: var(--saffron); color: var(--saffron); }
+
 /* ── LOADING SKELETON ── */
 .skeleton { animation: shimmer 1.5s infinite; }
-@keyframes shimmer {
-  0%,100% { opacity: 0.4; }
-  50% { opacity: 0.7; }
-}
+@keyframes shimmer { 0%,100% { opacity: 0.4; } 50% { opacity: 0.7; } }
 .skel-card { background: var(--card-bg); border: 1.5px solid #242424; border-radius: 20px; overflow: hidden; }
 .skel-thumb { height: 140px; background: #222; }
 .skel-body { padding: 14px; }
@@ -333,6 +358,50 @@ header {
 }
 .info-tile-label { font-size: 0.6rem; color: var(--muted); font-family: 'Montserrat', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .info-tile-value { font-size: 0.85rem; color: var(--dark); font-family: 'Montserrat', sans-serif; font-weight: 800; margin-top: 3px; }
+
+/* ── MENU SHEET ── */
+.menu-category-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--saffron); margin: 20px 0 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.menu-category-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.menu-category-title:first-child { margin-top: 0; }
+.menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 8px;
+  gap: 12px;
+}
+.menu-item-left { flex: 1; min-width: 0; }
+.menu-item-name {
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.85rem; color: var(--dark); margin-bottom: 2px;
+}
+.menu-item-desc { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
+.menu-item-price {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: 0.9rem; color: var(--saffron); white-space: nowrap;
+}
+.menu-veg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid #27AE60; display: inline-block;
+  margin-right: 5px; flex-shrink: 0;
+  background: rgba(39,174,96,0.2);
+}
+.menu-nonveg-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 1.5px solid #C0392B; display: inline-block;
+  margin-right: 5px; flex-shrink: 0;
+  background: rgba(192,57,43,0.2);
+}
+.menu-empty {
+  text-align: center; padding: 40px 0;
+  font-size: 0.82rem; color: var(--muted);
+  font-family: 'Montserrat', sans-serif;
+}
+.menu-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
 /* ── BOOKING FORM ── */
 .booking-section-title {
@@ -416,6 +485,16 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 .btn-primary.loading .btn-text { display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.btn-secondary {
+  width: 100%; background: transparent; color: var(--saffron);
+  border: 1.5px solid var(--saffron); border-radius: 50px; padding: 13px;
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.88rem; cursor: pointer;
+  transition: all 0.2s; margin-top: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-secondary:hover { background: var(--saffron); color: #fff; }
+
 /* ── PAYMENT SHEET ── */
 .payment-header {
   text-align: center; padding: 10px 0 20px;
@@ -475,6 +554,60 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 .split-value.green { color: #27AE60; }
 .split-value.saffron { color: var(--saffron); }
 
+/* ── NOTIFICATIONS PANEL ── */
+.notif-panel {
+  position: fixed; top: 66px; right: 0;
+  width: min(340px, 100vw);
+  background: #0D0D0D; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 0 20px;
+  z-index: 300; transform: translateX(110%);
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  max-height: calc(100vh - 66px); overflow-y: auto;
+  box-shadow: -8px 8px 40px rgba(0,0,0,0.5);
+}
+.notif-panel.open { transform: translateX(0); }
+.notif-panel-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #0D0D0D; z-index: 1;
+}
+.notif-panel-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: 0.9rem; color: #fff;
+}
+.notif-mark-read {
+  background: none; border: none; color: var(--saffron);
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.65rem; cursor: pointer; padding: 0;
+}
+.notif-item {
+  padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; gap: 12px; align-items: flex-start;
+  transition: background 0.15s;
+}
+.notif-item.unread { background: rgba(232,112,26,0.05); }
+.notif-item:hover { background: rgba(255,255,255,0.03); }
+.notif-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+}
+.notif-dot.unread { background: var(--saffron); }
+.notif-dot.read { background: transparent; border: 1.5px solid #3A2A1A; }
+.notif-content-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.78rem; color: #fff; margin-bottom: 3px; line-height: 1.3;
+}
+.notif-content-body { font-size: 0.7rem; color: #5A4A3A; line-height: 1.5; }
+.notif-time { font-size: 0.62rem; color: #3A2A1A; margin-top: 5px; font-family: 'Montserrat', sans-serif; }
+.notif-empty { padding: 40px 18px; text-align: center; }
+.notif-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+.notif-empty-text { font-size: 0.78rem; color: #3A2A1A; font-family: 'Montserrat', sans-serif; font-weight: 600; }
+.notif-overlay {
+  position: fixed; inset: 0; z-index: 299;
+  display: none;
+}
+.notif-overlay.open { display: block; }
+
 /* ── LOGIN GATE ── */
 #loginGate {
   display: none; min-height: 100vh;
@@ -526,9 +659,69 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.6rem; text-transform: uppercase;
 }
 .booking-card-status.confirmed { background: rgba(39,174,96,0.2); color: #27AE60; }
+.booking-card-status.rejected { background: rgba(192,57,43,0.2); color: #C0392B; }
 .booking-card-status.pending { background: rgba(232,112,26,0.2); color: var(--saffron); }
 .booking-info-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
-.booking-info-item { font-size: 0.72rem; color: #5A4A3A; display: flex; align-items: center; gap: 4px; }
+.booking-info-item { font-size: 0.72rem; color: #7A6A5A; display: flex; align-items: center; gap: 4px; }
+.booking-detail-section {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px; padding: 10px 12px; margin: 10px 0;
+}
+.booking-detail-label { font-size: 0.6rem; color: #3A2A1A; font-family: 'Montserrat', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.booking-detail-value { font-size: 0.75rem; color: #9A8A7A; }
+.booking-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.booking-action-btn {
+  flex: 1; min-width: 100px;
+  background: rgba(232,112,26,0.1); color: var(--saffron);
+  border: 1px solid rgba(232,112,26,0.25); border-radius: 50px;
+  padding: 8px 14px; font-family: 'Montserrat', sans-serif;
+  font-weight: 800; font-size: 0.68rem; cursor: pointer;
+  transition: all 0.18s; text-align: center; white-space: nowrap;
+}
+.booking-action-btn:hover { background: var(--saffron); color: #fff; }
+.booking-action-btn.secondary {
+  background: rgba(255,255,255,0.04); color: #7A6A5A;
+  border-color: rgba(255,255,255,0.08);
+}
+.booking-action-btn.secondary:hover { border-color: rgba(255,255,255,0.2); color: #fff; background: rgba(255,255,255,0.08); }
+
+/* ── ORDER SHEET ── */
+.order-item-row {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 12px; padding: 11px 14px; margin-bottom: 8px;
+}
+.order-item-name {
+  flex: 1; font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.8rem; color: var(--dark);
+}
+.order-item-price { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.82rem; color: var(--saffron); white-space: nowrap; }
+.qty-ctrl {
+  display: flex; align-items: center; gap: 6px;
+}
+.qty-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--saffron); border: none; color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s; flex-shrink: 0; line-height: 1;
+}
+.qty-btn:hover { background: var(--deep); }
+.qty-btn.minus { background: #EDE0D0; color: var(--muted); }
+.qty-btn.minus:hover { background: #DDD0C0; }
+.qty-count {
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.82rem; color: var(--dark); min-width: 20px; text-align: center;
+}
+.order-subtotal {
+  background: rgba(232,112,26,0.08); border: 1px solid rgba(232,112,26,0.2);
+  border-radius: 14px; padding: 14px 16px; margin: 16px 0;
+}
+.order-subtotal-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.order-subtotal-label { font-size: 0.75rem; color: var(--muted); font-family: 'Montserrat', sans-serif; }
+.order-subtotal-val { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.8rem; color: var(--dark); }
+.order-total-row { border-top: 1px solid rgba(232,112,26,0.2); padding-top: 10px; margin-top: 8px; display: flex; justify-content: space-between; }
+.order-total-label { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 0.88rem; color: var(--dark); }
+.order-total-val { font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 1.1rem; color: var(--saffron); }
 
 /* ── BOTTOM NAV ── */
 .bottom-nav {
@@ -572,6 +765,23 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   <div class="gate-loading-note" id="gateLoadingNote" style="display:none">Setting up your account…</div>
 </div>
 
+<!-- NOTIFICATION OVERLAY (click outside to close) -->
+<div class="notif-overlay" id="notifOverlay" onclick="closeNotifPanel()"></div>
+
+<!-- NOTIFICATIONS PANEL -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header">
+    <div class="notif-panel-title">🔔 Notifications</div>
+    <button class="notif-mark-read" onclick="markAllRead()">Mark all read</button>
+  </div>
+  <div id="notifList">
+    <div class="notif-empty">
+      <div class="notif-empty-icon">🔔</div>
+      <div class="notif-empty-text">No notifications yet</div>
+    </div>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="mainApp" style="display:none">
 
@@ -586,8 +796,12 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     <div class="header-logo-text">FoodNest <em>Your Food Companion</em></div>
   </a>
   <div class="header-right">
+    <button class="notif-bell-btn" onclick="toggleNotifPanel()" title="Notifications">
+      <span class="notif-bell-icon">🔔</span>
+      <span class="notif-badge" id="notifBadge"></span>
+    </button>
     <div class="user-avatar" id="userAvatar">U</div>
-    <a class="signout-btn" href="#" onclick="handleSignOut(event)">Sign Out</a>
+    <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
   </div>
 </header>
 
@@ -623,7 +837,6 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 
 <!-- DISCOVER TAB -->
 <div class="tab-content active" id="tab-content-discover">
-  <!-- SORT -->
   <div class="sort-row">
     <span class="results-count" id="resultsCount">Loading…</span>
     <select class="sort-select" id="sortSelect" onchange="applySort()">
@@ -634,9 +847,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
       <option value="booking">Booking Available</option>
     </select>
   </div>
-
   <div class="restaurant-grid" id="restaurantGrid">
-    <!-- Skeleton loaders -->
     <div class="skel-card skeleton"><div class="skel-thumb"></div><div class="skel-body"><div class="skel-line w70"></div><div class="skel-line w40"></div></div></div>
     <div class="skel-card skeleton"><div class="skel-thumb"></div><div class="skel-body"><div class="skel-line w70"></div><div class="skel-line w40"></div></div></div>
     <div class="skel-card skeleton"><div class="skel-thumb"></div><div class="skel-body"><div class="skel-line w70"></div><div class="skel-line w40"></div></div></div>
@@ -661,6 +872,20 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     <button class="sheet-close" onclick="closeDetail()">✕</button>
   </div>
   <div class="sheet-body" id="detailSheetBody"></div>
+</div>
+
+<!-- ─── MENU SHEET ─── -->
+<div class="sheet-backdrop" id="menuBackdrop" onclick="closeMenu()"></div>
+<div class="bottom-sheet" id="menuSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div>
+      <div class="sheet-title" id="menuSheetTitle">Menu</div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="menuSheetSub"></div>
+    </div>
+    <button class="sheet-close" onclick="closeMenu()">✕</button>
+  </div>
+  <div class="sheet-body" id="menuSheetBody"></div>
 </div>
 
 <!-- ─── BOOKING SHEET ─── -->
@@ -734,13 +959,13 @@ textarea.form-input { resize: vertical; min-height: 80px; }
 <div class="bottom-sheet" id="paymentSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <div class="sheet-title">Payment</div>
+    <div class="sheet-title" id="paymentSheetTitle">Payment</div>
     <button class="sheet-close" onclick="closePayment()">✕</button>
   </div>
   <div class="sheet-body" id="paymentBody">
     <div class="payment-header">
       <div class="payment-amount" id="payAmount">₹10</div>
-      <div class="payment-label">Booking advance · Non-refundable</div>
+      <div class="payment-label" id="paymentLabel">Booking advance · Non-refundable</div>
     </div>
 
     <div class="booking-section-title">Pay Via</div>
@@ -782,9 +1007,7 @@ textarea.form-input { resize: vertical; min-height: 80px; }
       </div>
     </div>
 
-    <div class="security-note">
-      🔒 Secured by 256-bit encryption · 100% safe payments
-    </div>
+    <div class="security-note">🔒 Secured by 256-bit encryption · 100% safe payments</div>
 
     <button class="btn-primary" id="payNowBtn" onclick="confirmPayment()">
       <div class="btn-spinner"></div>
@@ -793,31 +1016,45 @@ textarea.form-input { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
+<!-- ─── ORDER PLACEMENT SHEET ─── -->
+<div class="sheet-backdrop" id="orderBackdrop" onclick="closeOrderSheet()"></div>
+<div class="bottom-sheet" id="orderSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div>
+      <div class="sheet-title">Place Order</div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;" id="orderSheetSub"></div>
+    </div>
+    <button class="sheet-close" onclick="closeOrderSheet()">✕</button>
+  </div>
+  <div class="sheet-body" id="orderSheetBody"></div>
+</div>
+
 <!-- ─── SUCCESS SHEET ─── -->
 <div class="sheet-backdrop" id="successBackdrop"></div>
 <div class="bottom-sheet" id="successSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-header">
-    <div class="sheet-title">Booking Confirmed!</div>
+    <div class="sheet-title" id="successSheetTitle">Confirmed!</div>
     <button class="sheet-close" onclick="closeSuccess()">✕</button>
   </div>
   <div class="sheet-body">
     <div class="booking-success">
-      <div class="booking-success-icon">🎉</div>
-      <div class="booking-success-title">You're all set!</div>
-      <div class="booking-success-desc" id="successDescText">Your table is confirmed. Show this ID at the restaurant.</div>
+      <div class="booking-success-icon" id="successIcon">🎉</div>
+      <div class="booking-success-title" id="successTitle">You're all set!</div>
+      <div class="booking-success-desc" id="successDescText">Your table is confirmed.</div>
       <div class="booking-id-chip" id="finalBookingId">BOOK-XXXX</div>
-      <div class="split-info">
+      <div class="split-info" id="splitInfoBlock">
         <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;color:var(--dark);margin-bottom:10px;">💸 Payment Breakdown</div>
         <div class="split-row">
           <span class="split-label">Total Paid</span>
           <span class="split-value" id="splitTotal">₹10</span>
         </div>
-        <div class="split-row">
+        <div class="split-row" id="splitRestRow">
           <span class="split-label">🏪 Restaurant Receives (50%)</span>
           <span class="split-value green" id="splitRest">₹5</span>
         </div>
-        <div class="split-row">
+        <div class="split-row" id="splitPlatformRow">
           <span class="split-label">⚡ FoodNest Platform (50%)</span>
           <span class="split-value saffron" id="splitPlatform">₹5</span>
         </div>
@@ -841,6 +1078,11 @@ let selectedRestaurant = null;
 let bookingData = {};
 let selectedPayMethod = 'upi';
 let currentCustomer = null;
+let notifications = [];
+let paymentMode = 'booking'; // 'booking' | 'order'
+let currentOrderBooking = null;
+let orderCart = {};
+let currentMenuItems = [];
 
 // ── GUEST SIZE MAP ──
 const guestSizeMap = {
@@ -851,61 +1093,35 @@ const guestSizeMap = {
   '15': { label: 'Meeting / Get-together (10–15)', count: 15 },
 };
 
-// ── EMOJI MAP ──
-const typeEmoji = {
-  family: '🍽️', bar: '🍻', cafe: '☕', dhaba: '🍛',
-};
+const typeEmoji = { family: '🍽️', bar: '🍻', cafe: '☕', dhaba: '🍛' };
 const priceMap = { budget: '💰', mid: '💰💰', highend: '💎' };
 const priceSortMap = { budget: 1, mid: 2, highend: 3 };
-
-// ── ICONS ──
 const foodTypeLabel = { veg: '🥦 Pure Veg', nonveg: '🍗 Non-Veg', both: '🌿 Both' };
 const restTypeLabel = { family: '👨‍👩‍👧 Family', bar: '🍻 Bar', cafe: '☕ Café', dhaba: '🍛 Dhaba' };
 
-// ── SESSION HANDOFF FROM index.html ──
-// When a customer just signed up on index.html, their basic profile (id, name, email)
-// is stashed in sessionStorage under 'fn_user'. We use it to skip redundant lookups
-// and to pre-fill the greeting before Firestore confirms the full profile.
+// ── SESSION HANDOFF ──
 function getHandoffUser() {
   try {
     const raw = sessionStorage.getItem('fn_user');
     if (!raw) return null;
     const data = JSON.parse(raw);
     return (data && data.role === 'customer') ? data : null;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
 // ── AUTH READY ──
-// Firebase Auth is the single source of truth for "is someone logged in".
-// The fn_user sessionStorage value (written by index.html) is only used as a
-// hint for the greeting and to avoid a duplicate Firestore profile write —
-// it is never trusted on its own to grant access to booking/payment actions.
 window.__onAuthReady = async (user) => {
   if (!user) {
     const session = JSON.parse(sessionStorage.getItem('fn_user') || 'null');
     if (session && session.role === 'customer' && session.id && session.email) {
       document.getElementById('loginGate').classList.remove('show');
       document.getElementById('mainApp').style.display = 'block';
-      setupUserHeader({
-        displayName: session.name || session.email.split('@')[0],
-        email: session.email,
-        photoURL: session.photoURL || null
-      });
-      currentCustomer = {
-        id: session.id,
-        name: session.name,
-        email: session.email
-      };
+      setupUserHeader({ displayName: session.name || session.email.split('@')[0], email: session.email, photoURL: session.photoURL || null });
+      currentCustomer = { id: session.id, name: session.name, email: session.email };
       const city = session.city || 'your city';
       document.getElementById('heroSub').textContent = `Discovering great food in ${city}`;
       await loadRestaurants();
-      setInterval(() => {
-        if (document.getElementById('tab-content-bookings').classList.contains('active')) {
-          loadMyBookings();
-        }
-      }, 30000);
+      startNotifPolling();
       return;
     }
     showLoginGate();
@@ -916,6 +1132,7 @@ window.__onAuthReady = async (user) => {
   setupUserHeader(user);
   await ensureCustomerProfile(user);
   await loadRestaurants();
+  startNotifPolling();
 };
 
 function showLoginGate() {
@@ -938,45 +1155,29 @@ function setupUserHeader(user) {
   document.getElementById('heroGreeting').innerHTML = `${greet}, <em>${firstName}!</em> 🍽️`;
 }
 
-// Finds the customer's Firestore profile by their signed-in email. If none exists
-// yet (e.g. they signed in with Google directly without going through the
-// index.html signup form), creates one automatically using their Google profile —
-// so Google Sign-In alone is enough to use the app end-to-end.
 async function ensureCustomerProfile(user) {
   const email = user.email.toLowerCase();
   try {
     const db = window.__db;
     const q = window.__fsQuery(window.__fsCollection(db, 'customers'), window.__fsWhere('email', '==', email));
     const snap = await window.__fsDocs(q);
-
     if (!snap.empty) {
       currentCustomer = { id: snap.docs[0].id, ...snap.docs[0].data() };
     } else {
-      // No profile yet — create a minimal one from the Google account.
       const handoff = getHandoffUser();
       const newProfile = {
         name: user.displayName || (handoff && handoff.name) || email.split('@')[0],
-        email,
-        phone: null,
-        city: null,
-        foodPreference: 'both',
-        diningStyle: 'family',
+        email, phone: null, city: null, foodPreference: 'both', diningStyle: 'family',
         createdAt: window.__fsTimestamp(),
       };
       const docRef = await window.__fsAddDoc(window.__fsCollection(db, 'customers'), newProfile);
       currentCustomer = { id: docRef.id, ...newProfile };
     }
-
-    // Refresh sessionStorage so other pages (and a page reload here) have the
-    // correct, Firestore-confirmed identity rather than the signup-time guess.
     sessionStorage.setItem('fn_user', JSON.stringify({
-      id: currentCustomer.id,
-      role: 'customer',
-      name: currentCustomer.name,
-      email: currentCustomer.email,
+      id: currentCustomer.id, role: 'customer',
+      name: currentCustomer.name, email: currentCustomer.email,
       photoURL: user.photoURL || null,
     }));
-
     const city = currentCustomer.city || 'your city';
     document.getElementById('heroSub').textContent = `Discovering great food in ${city}`;
   } catch (e) {
@@ -985,15 +1186,137 @@ async function ensureCustomerProfile(user) {
   }
 }
 
+// ── NOTIFICATIONS ──
+function startNotifPolling() {
+  loadNotifications();
+  setInterval(loadNotifications, 30000);
+}
+
+async function loadNotifications() {
+  const user = window.__currentUser;
+  const email = user ? user.email : (currentCustomer ? currentCustomer.email : null);
+  if (!email) return;
+  try {
+    const db = window.__db;
+    const q = window.__fsQuery(
+      window.__fsCollection(db, 'bookings'),
+      window.__fsWhere('customerEmail', '==', email)
+    );
+    const snap = await window.__fsDocs(q);
+    const bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    // Build notifications from booking statuses
+    const newNotifs = [];
+    const seenKey = 'fn_seen_notifs_' + email;
+    const seen = JSON.parse(localStorage.getItem(seenKey) || '[]');
+    
+    bookings.forEach(b => {
+      if (b.isRejected) {
+        newNotifs.push({
+          id: 'rej_' + b.id,
+          type: 'rejected',
+          title: '❌ Booking Rejected',
+          body: `Your booking at ${b.restaurantName} on ${b.date} at ${b.time} was rejected by the restaurant.`,
+          time: b.updatedAt || b.createdAt,
+          unread: !seen.includes('rej_' + b.id),
+        });
+      } else if (b.status === 'confirmed') {
+        newNotifs.push({
+          id: 'conf_' + b.id,
+          type: 'confirmed',
+          title: '✅ Booking Confirmed',
+          body: `Table at ${b.restaurantName} on ${b.date} at ${b.time} is confirmed!`,
+          time: b.createdAt,
+          unread: !seen.includes('conf_' + b.id),
+        });
+      }
+    });
+    
+    // Sort newest first
+    newNotifs.sort((a,b) => ((b.time?.seconds||0) - (a.time?.seconds||0)));
+    notifications = newNotifs;
+    renderNotifications();
+  } catch(e) {
+    console.error('Notification load error:', e);
+  }
+}
+
+function renderNotifications() {
+  const unread = notifications.filter(n => n.unread).length;
+  const badge = document.getElementById('notifBadge');
+  if (unread > 0) {
+    badge.textContent = unread > 9 ? '9+' : unread;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
+  }
+  
+  const list = document.getElementById('notifList');
+  if (notifications.length === 0) {
+    list.innerHTML = `<div class="notif-empty"><div class="notif-empty-icon">🔔</div><div class="notif-empty-text">No notifications yet</div></div>`;
+    return;
+  }
+  
+  list.innerHTML = notifications.map(n => {
+    const timeStr = n.time?.seconds ? timeAgo(new Date(n.time.seconds * 1000)) : '';
+    return `
+    <div class="notif-item ${n.unread ? 'unread' : ''}">
+      <div class="notif-dot ${n.unread ? 'unread' : 'read'}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="notif-content-title">${n.title}</div>
+        <div class="notif-content-body">${n.body}</div>
+        ${timeStr ? `<div class="notif-time">${timeStr}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function timeAgo(date) {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs/24)}d ago`;
+}
+
+function markAllRead() {
+  const user = window.__currentUser;
+  const email = user ? user.email : (currentCustomer ? currentCustomer.email : null);
+  if (!email) return;
+  const seenKey = 'fn_seen_notifs_' + email;
+  const allIds = notifications.map(n => n.id);
+  localStorage.setItem(seenKey, JSON.stringify(allIds));
+  notifications.forEach(n => n.unread = false);
+  renderNotifications();
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notifPanel');
+  const overlay = document.getElementById('notifOverlay');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    overlay.classList.add('open');
+  }
+}
+
+function closeNotifPanel() {
+  document.getElementById('notifPanel').classList.remove('open');
+  document.getElementById('notifOverlay').classList.remove('open');
+}
+
 // ── LOAD RESTAURANTS ──
 async function loadRestaurants() {
   try {
     const db = window.__db;
     const snap = await window.__fsDocs(window.__fsCollection(db, 'restaurants'));
     allRestaurants = snap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      // Simulate live occupancy (random for demo; in prod, this'd be real-time)
+      id: doc.id, ...doc.data(),
       occupancy: Math.floor(Math.random() * 100),
       totalTables: Math.floor(Math.random() * 15) + 5,
     }));
@@ -1027,8 +1350,6 @@ function applySort() {
 
 function applyFiltersAndRender() {
   let list = [...allRestaurants];
-
-  // Search
   if (currentSearchQuery) {
     list = list.filter(r =>
       (r.restaurantName||'').toLowerCase().includes(currentSearchQuery) ||
@@ -1036,21 +1357,16 @@ function applyFiltersAndRender() {
       (r.restType||'').toLowerCase().includes(currentSearchQuery)
     );
   }
-
-  // Filter
   if (currentFilter !== 'all') {
-    if (currentFilter === 'open')    list = list.filter(r => r.isOpen);
+    if (currentFilter === 'open')         list = list.filter(r => r.isOpen);
     else if (currentFilter === 'booking') list = list.filter(r => r.advanceBooking);
     else if (['veg','nonveg','both'].includes(currentFilter)) list = list.filter(r => r.foodType === currentFilter);
     else list = list.filter(r => r.restType === currentFilter);
   }
-
-  // Sort
-  if (currentSort === 'open')       list.sort((a,b) => (b.isOpen ? 1:0) - (a.isOpen ? 1:0));
-  else if (currentSort === 'price_low') list.sort((a,b) => (priceSortMap[a.priceRange]||2) - (priceSortMap[b.priceRange]||2));
-  else if (currentSort === 'price_high') list.sort((a,b) => (priceSortMap[b.priceRange]||2) - (priceSortMap[a.priceRange]||2));
-  else if (currentSort === 'booking') list.sort((a,b) => (b.advanceBooking?1:0)-(a.advanceBooking?1:0));
-
+  if (currentSort === 'open')            list.sort((a,b) => (b.isOpen?1:0)-(a.isOpen?1:0));
+  else if (currentSort === 'price_low')  list.sort((a,b) => (priceSortMap[a.priceRange]||2)-(priceSortMap[b.priceRange]||2));
+  else if (currentSort === 'price_high') list.sort((a,b) => (priceSortMap[b.priceRange]||2)-(priceSortMap[a.priceRange]||2));
+  else if (currentSort === 'booking')    list.sort((a,b) => (b.advanceBooking?1:0)-(a.advanceBooking?1:0));
   filteredRestaurants = list;
   renderRestaurants(list);
 }
@@ -1059,16 +1375,14 @@ function renderRestaurants(list) {
   const grid = document.getElementById('restaurantGrid');
   const countEl = document.getElementById('resultsCount');
   countEl.textContent = `${list.length} restaurant${list.length !== 1 ? 's' : ''} found`;
-
   if (list.length === 0) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
       <div class="empty-icon">🍽️</div>
       <div class="empty-title">No restaurants found</div>
-      <div class="empty-sub">Try a different filter or search term. More restaurants joining soon!</div>
+      <div class="empty-sub">Try a different filter or search term.</div>
     </div>`;
     return;
   }
-
   grid.innerHTML = list.map(r => {
     const occ = r.occupancy || 0;
     const occClass = occ < 50 ? 'low' : occ < 80 ? 'mid' : 'high';
@@ -1094,13 +1408,13 @@ function renderRestaurants(list) {
         <div class="rest-footer">
           <div class="occupancy-bar">
             <div class="occupancy-label">
-              <span>🪑 ${occLabel}</span>
-              <span>${occ}% full</span>
+              <span>🪑 ${occLabel}</span><span>${occ}% full</span>
             </div>
             <div class="occupancy-track">
               <div class="occupancy-fill ${occClass}" style="width:${occ}%"></div>
             </div>
           </div>
+          <button class="menu-btn" onclick="event.stopPropagation(); openMenu('${r.id}')">📋 Menu</button>
           <button class="book-btn ${!canBook ? 'disabled' : ''}"
             onclick="${canBook ? `event.stopPropagation(); openBooking('${r.id}')` : 'event.stopPropagation()'}">
             ${canBook ? '📅 Book' : '🚶 Walk-in'}
@@ -1109,6 +1423,78 @@ function renderRestaurants(list) {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── MENU SHEET ──
+async function openMenu(restId) {
+  const r = allRestaurants.find(x => x.id === restId);
+  if (!r) return;
+  document.getElementById('menuSheetTitle').textContent = r.restaurantName;
+  document.getElementById('menuSheetSub').textContent = `${foodTypeLabel[r.foodType] || ''} · ${restTypeLabel[r.restType] || ''}`;
+  document.getElementById('menuSheetBody').innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-family:'Montserrat',sans-serif;font-size:0.82rem;">Loading menu…</div>`;
+  document.getElementById('menuBackdrop').classList.add('open');
+  document.getElementById('menuSheet').classList.add('open');
+  
+  try {
+    const db = window.__db;
+    const q = window.__fsQuery(
+      window.__fsCollection(db, 'menuItems'),
+      window.__fsWhere('restaurantId', '==', restId)
+    );
+    const snap = await window.__fsDocs(q);
+    if (snap.empty) {
+      document.getElementById('menuSheetBody').innerHTML = `
+        <div class="menu-empty">
+          <div class="menu-empty-icon">🍽️</div>
+          <div>No menu items added yet.<br><span style="font-size:0.7rem;color:var(--muted);">The restaurant hasn't uploaded their menu.</span></div>
+        </div>`;
+      return;
+    }
+    
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    currentMenuItems = items;
+    
+    // Group by category
+    const cats = {};
+    items.forEach(item => {
+      const cat = item.category || 'Other';
+      if (!cats[cat]) cats[cat] = [];
+      cats[cat].push(item);
+    });
+    
+    let html = '';
+    Object.entries(cats).forEach(([cat, catItems]) => {
+      html += `<div class="menu-category-title">${cat}</div>`;
+      catItems.forEach(item => {
+        const dot = item.isVeg !== false
+          ? `<span class="menu-veg-dot"></span>`
+          : `<span class="menu-nonveg-dot"></span>`;
+        html += `
+        <div class="menu-item">
+          <div class="menu-item-left">
+            <div class="menu-item-name">${dot}${item.name || '—'}</div>
+            ${item.description ? `<div class="menu-item-desc">${item.description}</div>` : ''}
+          </div>
+          <div class="menu-item-price">₹${item.price || 0}</div>
+        </div>`;
+      });
+    });
+    
+    // Add Book Table CTA if bookable
+    if (r.advanceBooking) {
+      html += `<button class="btn-primary" style="margin-top:8px;" onclick="closeMenu(); setTimeout(()=>openBooking('${restId}'),250)">📅 Book a Table Here →</button>`;
+    }
+    
+    document.getElementById('menuSheetBody').innerHTML = html;
+  } catch(e) {
+    console.error(e);
+    document.getElementById('menuSheetBody').innerHTML = `<div class="menu-empty"><div class="menu-empty-icon">⚠️</div><div>Couldn't load menu. Try again.</div></div>`;
+  }
+}
+
+function closeMenu() {
+  document.getElementById('menuBackdrop').classList.remove('open');
+  document.getElementById('menuSheet').classList.remove('open');
 }
 
 // ── DETAIL SHEET ──
@@ -1123,38 +1509,14 @@ function openDetail(id) {
   document.getElementById('detailSheetBody').innerHTML = `
     <div class="rest-detail-thumb">${typeEmoji[r.restType] || '🍽️'}</div>
     <div class="info-grid">
-      <div class="info-tile">
-        <div class="info-tile-label">Status</div>
-        <div class="info-tile-value" style="color:${r.isOpen ? '#27AE60' : '#E74C3C'}">${r.isOpen ? '🟢 Open Now' : '🔴 Closed'}</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Type</div>
-        <div class="info-tile-value">${restTypeLabel[r.restType] || r.restType || '—'}</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Food</div>
-        <div class="info-tile-value">${foodTypeLabel[r.foodType] || r.foodType || '—'}</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Price Range</div>
-        <div class="info-tile-value">${priceMap[r.priceRange] || '💰'} ${r.priceRange === 'budget' ? 'Budget' : r.priceRange === 'mid' ? 'Mid-Range' : 'High-End'}</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Hours</div>
-        <div class="info-tile-value">${r.openTime || '?'} – ${r.closeTime || '?'}</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Open Days</div>
-        <div class="info-tile-value" style="font-size:0.72rem">${days}</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Tables</div>
-        <div class="info-tile-value">${r.totalTables || '?'} total</div>
-      </div>
-      <div class="info-tile">
-        <div class="info-tile-label">Delivery</div>
-        <div class="info-tile-value">${r.homeDelivery ? '✅ Available' : '❌ Dine-in only'}</div>
-      </div>
+      <div class="info-tile"><div class="info-tile-label">Status</div><div class="info-tile-value" style="color:${r.isOpen?'#27AE60':'#E74C3C'}">${r.isOpen?'🟢 Open Now':'🔴 Closed'}</div></div>
+      <div class="info-tile"><div class="info-tile-label">Type</div><div class="info-tile-value">${restTypeLabel[r.restType]||r.restType||'—'}</div></div>
+      <div class="info-tile"><div class="info-tile-label">Food</div><div class="info-tile-value">${foodTypeLabel[r.foodType]||r.foodType||'—'}</div></div>
+      <div class="info-tile"><div class="info-tile-label">Price Range</div><div class="info-tile-value">${priceMap[r.priceRange]||'💰'} ${r.priceRange==='budget'?'Budget':r.priceRange==='mid'?'Mid-Range':'High-End'}</div></div>
+      <div class="info-tile"><div class="info-tile-label">Hours</div><div class="info-tile-value">${r.openTime||'?'} – ${r.closeTime||'?'}</div></div>
+      <div class="info-tile"><div class="info-tile-label">Open Days</div><div class="info-tile-value" style="font-size:0.72rem">${days}</div></div>
+      <div class="info-tile"><div class="info-tile-label">Tables</div><div class="info-tile-value">${r.totalTables||'?'} total</div></div>
+      <div class="info-tile"><div class="info-tile-label">Delivery</div><div class="info-tile-value">${r.homeDelivery?'✅ Available':'❌ Dine-in only'}</div></div>
     </div>
     <div style="margin-bottom:12px">
       <div class="occupancy-label" style="font-size:0.7rem;color:#5A4A3A;font-family:'Montserrat',sans-serif;font-weight:600;display:flex;justify-content:space-between;margin-bottom:6px;">
@@ -1164,10 +1526,11 @@ function openDetail(id) {
         <div class="occupancy-fill ${occClass}" style="width:${occ}%"></div>
       </div>
     </div>
-    <div style="font-size:0.72rem;color:#5A4A3A;margin-bottom:16px;">📍 ${r.location || '—'}</div>
+    <div style="font-size:0.72rem;color:#5A4A3A;margin-bottom:16px;">📍 ${r.location||'—'}</div>
+    <button class="btn-secondary" onclick="closeDetail(); setTimeout(()=>openMenu('${r.id}'),200)">📋 View Menu</button>
     ${r.advanceBooking
       ? `<button class="btn-primary" onclick="closeDetail(); setTimeout(()=>openBooking('${r.id}'),200)">📅 Book a Table →</button>`
-      : `<div style="text-align:center;font-size:0.78rem;color:#5A4A3A;padding:14px;background:rgba(255,255,255,0.5);border-radius:12px;">🚶 Walk-in only · No advance booking</div>`
+      : `<div style="text-align:center;font-size:0.78rem;color:#5A4A3A;padding:14px;background:rgba(255,255,255,0.5);border-radius:12px;margin-top:10px;">🚶 Walk-in only · No advance booking</div>`
     }
   `;
   document.getElementById('detailBackdrop').classList.add('open');
@@ -1184,7 +1547,6 @@ function openBooking(id) {
   if (!r) return;
   selectedRestaurant = r;
   document.getElementById('bookingRestName').textContent = '🏪 ' + r.restaurantName;
-  // Set min date to today
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('bookDate').min = today;
   document.getElementById('bookDate').value = today;
@@ -1198,7 +1560,6 @@ function closeBooking() {
   document.getElementById('bookingSheet').classList.remove('open');
 }
 
-// Listen for guest chip changes
 document.addEventListener('change', function(e) {
   if (e.target.name === 'guests') updateCostSummary();
 });
@@ -1218,7 +1579,7 @@ function getGuestData() {
   return guestSizeMap[val] || { count: 1, label: 'Solo (1)' };
 }
 
-// ── PROCEED TO PAYMENT ──
+// ── PROCEED TO PAYMENT (booking) ──
 function proceedToPayment() {
   const date = document.getElementById('bookDate').value;
   const time = document.getElementById('bookTime').value;
@@ -1230,14 +1591,16 @@ function proceedToPayment() {
     restaurantName: selectedRestaurant.restaurantName,
     ownerEmail: selectedRestaurant.ownerEmail,
     date, time,
-    guests: g.label,
-    guestCount: g.count,
+    guests: g.label, guestCount: g.count,
     dishes: document.getElementById('bookDishes').value.trim(),
     occasion: document.getElementById('bookOccasion').value.trim(),
     total,
     ownerReceives: Math.floor(total * 0.5),
     platformReceives: total - Math.floor(total * 0.5),
   };
+  paymentMode = 'booking';
+  document.getElementById('paymentSheetTitle').textContent = 'Payment';
+  document.getElementById('paymentLabel').textContent = 'Booking advance · Non-refundable';
   document.getElementById('payAmount').textContent = '₹' + total;
   document.getElementById('payNowBtn').querySelector('.btn-text').textContent = `🔒 Pay ₹${total} Now →`;
   closeBooking();
@@ -1261,78 +1624,126 @@ function closePayment() {
   document.getElementById('paymentSheet').classList.remove('open');
 }
 
-// ── CONFIRM PAYMENT ──
+// ── CONFIRM PAYMENT (booking or order) ──
 async function confirmPayment() {
   if (selectedPayMethod === 'upi') {
     const upiId = document.getElementById('upiId').value.trim();
-    if (!upiId || !upiId.includes('@')) {
-      showToast('Please enter a valid UPI ID (e.g. name@upi)', 'red'); return;
-    }
+    if (!upiId || !upiId.includes('@')) { showToast('Please enter a valid UPI ID', 'red'); return; }
   }
-
   const btn = document.getElementById('payNowBtn');
   btn.classList.add('loading'); btn.disabled = true;
-
   try {
-    const db = window.__db;
-    const user = window.__currentUser;
-
-    // Save booking to Firestore
-    const docRef = await window.__fsAddDoc(window.__fsCollection(db, 'bookings'), {
-      restaurantId: bookingData.restaurantId,
-      restaurantName: bookingData.restaurantName,
-      customerId: currentCustomer?.id || null,
-      customerEmail: user?.email || null,
-      customerName: user?.displayName || null,
-      date: bookingData.date,
-      time: bookingData.time,
-      guests: bookingData.guests,
-      guestCount: bookingData.guestCount,
-      dishes: bookingData.dishes || null,
-      occasion: bookingData.occasion || null,
-      paymentMethod: selectedPayMethod,
-      totalPaid: bookingData.total,
-      ownerReceives: bookingData.ownerReceives,
-      platformReceives: bookingData.platformReceives,
-      status: 'confirmed',
-      createdAt: window.__fsTimestamp(),
-    });
-
-    // Update owner's balance in restaurant doc
-    if (bookingData.restaurantId && bookingData.ownerReceives) {
-      try {
-        const restRef = window.__fsDoc(db, 'restaurants', bookingData.restaurantId);
-        await window.__fsUpdateDoc(restRef, {
-          ownerBalance: window.__fsIncrement(bookingData.ownerReceives),
-          totalBookings: window.__fsIncrement(1),
-        });
-      } catch(e) { console.warn('Balance update skipped:', e); }
+    if (paymentMode === 'order') {
+      await confirmOrderPayment(btn);
+    } else {
+      await confirmBookingPayment(btn);
     }
-
-    btn.classList.remove('loading'); btn.disabled = false;
-    const bookId = 'BOOK-' + docRef.id.slice(0,8).toUpperCase();
-
-    document.getElementById('finalBookingId').textContent = '🔑 ' + bookId;
-    document.getElementById('successDescText').textContent =
-      `Table confirmed at ${bookingData.restaurantName} on ${bookingData.date} at ${bookingData.time} for ${bookingData.guests}.`;
-    document.getElementById('splitTotal').textContent = '₹' + bookingData.total;
-    document.getElementById('splitRest').textContent = '₹' + bookingData.ownerReceives;
-    document.getElementById('splitPlatform').textContent = '₹' + bookingData.platformReceives;
-
-    closePayment();
-    setTimeout(() => {
-      document.getElementById('successBackdrop').classList.add('open');
-      document.getElementById('successSheet').classList.add('open');
-    }, 300);
-
-    // Reload bookings tab
-    loadMyBookings();
-
   } catch(e) {
     btn.classList.remove('loading'); btn.disabled = false;
     console.error(e);
     showToast('❌ Payment failed. Please try again.', 'red');
   }
+}
+
+async function confirmBookingPayment(btn) {
+  const db = window.__db;
+  const user = window.__currentUser;
+  const docRef = await window.__fsAddDoc(window.__fsCollection(db, 'bookings'), {
+    restaurantId: bookingData.restaurantId,
+    restaurantName: bookingData.restaurantName,
+    customerId: currentCustomer?.id || null,
+    customerEmail: user?.email || null,
+    customerName: user?.displayName || null,
+    date: bookingData.date, time: bookingData.time,
+    guests: bookingData.guests, guestCount: bookingData.guestCount,
+    dishes: bookingData.dishes || null,
+    occasion: bookingData.occasion || null,
+    paymentMethod: selectedPayMethod,
+    totalPaid: bookingData.total,
+    ownerReceives: bookingData.ownerReceives,
+    platformReceives: bookingData.platformReceives,
+    status: 'confirmed',
+    createdAt: window.__fsTimestamp(),
+  });
+  if (bookingData.restaurantId && bookingData.ownerReceives) {
+    try {
+      const restRef = window.__fsDoc(db, 'restaurants', bookingData.restaurantId);
+      await window.__fsUpdateDoc(restRef, {
+        ownerBalance: window.__fsIncrement(bookingData.ownerReceives),
+        totalBookings: window.__fsIncrement(1),
+      });
+    } catch(e) { console.warn('Balance update skipped:', e); }
+  }
+  btn.classList.remove('loading'); btn.disabled = false;
+  const bookId = 'BOOK-' + docRef.id.slice(0,8).toUpperCase();
+  showSuccessSheet({
+    icon: '🎉', title: 'You\'re all set!', sheetTitle: 'Booking Confirmed!',
+    desc: `Table confirmed at ${bookingData.restaurantName} on ${bookingData.date} at ${bookingData.time} for ${bookingData.guests}.`,
+    bookingId: '🔑 ' + bookId,
+    total: bookingData.total, restShare: bookingData.ownerReceives, platformShare: bookingData.platformReceives,
+    showSplit: true,
+  });
+  loadMyBookings();
+  loadNotifications();
+}
+
+async function confirmOrderPayment(btn) {
+  const db = window.__db;
+  const user = window.__currentUser;
+  const items = Object.entries(orderCart).map(([id, q]) => {
+    const item = currentMenuItems.find(m => m.id === id);
+    return { id, name: item?.name || id, price: item?.price || 0, qty: q };
+  }).filter(i => i.qty > 0);
+  
+  const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const b = currentOrderBooking;
+  
+  const docRef = await window.__fsAddDoc(window.__fsCollection(db, 'orders'), {
+    bookingId: b.id,
+    restaurantId: b.restaurantId,
+    restaurantName: b.restaurantName,
+    customerId: currentCustomer?.id || null,
+    customerEmail: user?.email || null,
+    customerName: user?.displayName || null,
+    items,
+    total,
+    paymentMethod: selectedPayMethod,
+    status: 'placed',
+    createdAt: window.__fsTimestamp(),
+  });
+  
+  // Update booking with order reference
+  try {
+    const bRef = window.__fsDoc(db, 'bookings', b.id);
+    await window.__fsUpdateDoc(bRef, { hasOrder: true, lastOrderId: docRef.id });
+  } catch(e) { console.warn('Booking order link skipped:', e); }
+  
+  btn.classList.remove('loading'); btn.disabled = false;
+  showSuccessSheet({
+    icon: '🍽️', title: 'Order Placed!', sheetTitle: 'Order Confirmed!',
+    desc: `Your order at ${b.restaurantName} has been placed. The kitchen has been notified!`,
+    bookingId: '🧾 ORD-' + docRef.id.slice(0,8).toUpperCase(),
+    total, restShare: total, platformShare: 0,
+    showSplit: false,
+  });
+  loadMyBookings();
+}
+
+function showSuccessSheet(opts) {
+  closePayment();
+  document.getElementById('successSheetTitle').textContent = opts.sheetTitle;
+  document.getElementById('successIcon').textContent = opts.icon;
+  document.getElementById('successTitle').textContent = opts.title;
+  document.getElementById('successDescText').textContent = opts.desc;
+  document.getElementById('finalBookingId').textContent = opts.bookingId;
+  document.getElementById('splitTotal').textContent = '₹' + opts.total;
+  document.getElementById('splitRest').textContent = '₹' + opts.restShare;
+  document.getElementById('splitPlatform').textContent = '₹' + opts.platformShare;
+  document.getElementById('splitInfoBlock').style.display = opts.showSplit ? 'block' : 'none';
+  setTimeout(() => {
+    document.getElementById('successBackdrop').classList.add('open');
+    document.getElementById('successSheet').classList.add('open');
+  }, 300);
 }
 
 function closeSuccess() {
@@ -1344,12 +1755,13 @@ function closeSuccess() {
 async function loadMyBookings() {
   const wrap = document.getElementById('myBookingsWrap');
   const user = window.__currentUser;
-  if (!user) return;
+  const email = user ? user.email : (currentCustomer ? currentCustomer.email : null);
+  if (!email) return;
   try {
     const db = window.__db;
     const q = window.__fsQuery(
       window.__fsCollection(db, 'bookings'),
-      window.__fsWhere('customerEmail', '==', user.email)
+      window.__fsWhere('customerEmail', '==', email)
     );
     const snap = await window.__fsDocs(q);
     if (snap.empty) {
@@ -1358,31 +1770,210 @@ async function loadMyBookings() {
     }
     const bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-    wrap.innerHTML = bookings.map(b => `
+    
+    wrap.innerHTML = bookings.map(b => {
+      const statusClass = b.isRejected ? 'rejected' : 'confirmed';
+      const statusLabel = b.isRejected ? '❌ Rejected' : '✅ Confirmed';
+      const bookId = 'BOOK-' + b.id.slice(0,8).toUpperCase();
+      const bookedAt = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) : '—';
+      return `
       <div class="booking-card">
         <div class="booking-card-head">
           <div class="booking-card-rest">🏪 ${b.restaurantName || '—'}</div>
-           <span class="booking-card-status ${b.isRejected ? 'pending' : 'confirmed'}" style="${b.isRejected ? 'background:rgba(192,57,43,0.2);color:#C0392B' : ''}">
-            ${b.isRejected ? '❌ Rejected by restaurant' : '✅ Confirmed'}
-          </span>
+          <span class="booking-card-status ${statusClass}">${statusLabel}</span>
         </div>
         <div class="booking-info-row">
           <span class="booking-info-item">📅 ${b.date || '—'}</span>
           <span class="booking-info-item">🕐 ${b.time || '—'}</span>
           <span class="booking-info-item">👥 ${b.guests || '—'}</span>
         </div>
-        ${b.occasion ? `<div style="font-size:0.72rem;color:#5A4A3A;margin-top:6px;">🎉 ${b.occasion}</div>` : ''}
-        ${b.dishes ? `<div style="font-size:0.72rem;color:#5A4A3A;margin-top:4px;">🍽️ ${b.dishes}</div>` : ''}
+        ${b.occasion ? `<div class="booking-detail-section"><div class="booking-detail-label">Occasion</div><div class="booking-detail-value">🎉 ${b.occasion}</div></div>` : ''}
+        ${b.dishes ? `<div class="booking-detail-section"><div class="booking-detail-label">Pre-ordered Dishes</div><div class="booking-detail-value">🍽️ ${b.dishes}</div></div>` : ''}
+        ${b.isRejected && b.rejectionReason ? `<div class="booking-detail-section" style="border-color:rgba(192,57,43,0.2);background:rgba(192,57,43,0.05)"><div class="booking-detail-label" style="color:#C0392B;">Rejection Reason</div><div class="booking-detail-value">${b.rejectionReason}</div></div>` : ''}
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid #242424;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:0.65rem;color:#3A2A1A;font-family:'Montserrat',sans-serif;font-weight:700;">BOOK-${b.id.slice(0,8).toUpperCase()}</span>
+          <div>
+            <div style="font-size:0.65rem;color:#3A2A1A;font-family:'Montserrat',sans-serif;font-weight:700;">${bookId}</div>
+            <div style="font-size:0.6rem;color:#2A1A0A;margin-top:2px;">Booked on ${bookedAt}</div>
+          </div>
           <span style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.82rem;color:var(--saffron);">₹${b.totalPaid || 0} paid</span>
         </div>
-      </div>
-    `).join('');
+        ${!b.isRejected ? `
+        <div class="booking-card-actions">
+          <button class="booking-action-btn" onclick="openOrderSheet('${b.id}')">🍽️ Place Order / Pay Bill</button>
+          <button class="booking-action-btn secondary" onclick="openMenu('${b.restaurantId}')">📋 View Menu</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
   } catch(e) {
     console.error(e);
     wrap.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Couldn't load bookings</div><div class="empty-sub">Try again later.</div></div>`;
   }
+}
+
+// ── ORDER SHEET ──
+async function openOrderSheet(bookingId) {
+  const db = window.__db;
+  try {
+    const bRef = window.__fsDoc(db, 'bookings', bookingId);
+    const bSnap = await window.__fsGetDoc(bRef);
+    if (!bSnap.exists()) { showToast('Booking not found', 'red'); return; }
+    currentOrderBooking = { id: bookingId, ...bSnap.data() };
+    orderCart = {};
+    
+    document.getElementById('orderSheetSub').textContent = `${currentOrderBooking.restaurantName} · ${currentOrderBooking.date} ${currentOrderBooking.time}`;
+    document.getElementById('orderSheetBody').innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-family:'Montserrat',sans-serif;">Loading menu…</div>`;
+    document.getElementById('orderBackdrop').classList.add('open');
+    document.getElementById('orderSheet').classList.add('open');
+    
+    // Load menu items
+    const q = window.__fsQuery(
+      window.__fsCollection(db, 'menuItems'),
+      window.__fsWhere('restaurantId', '==', currentOrderBooking.restaurantId)
+    );
+    const snap = await window.__fsDocs(q);
+    if (snap.empty) {
+      document.getElementById('orderSheetBody').innerHTML = `
+        <div class="menu-empty">
+          <div class="menu-empty-icon">🍽️</div>
+          <div>No menu available for this restaurant yet.<br><span style="font-size:0.7rem;color:var(--muted);">Contact the restaurant directly to place an order.</span></div>
+        </div>`;
+      return;
+    }
+    
+    currentMenuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderOrderSheet();
+  } catch(e) {
+    console.error(e);
+    showToast('Could not load order menu', 'red');
+  }
+}
+
+function renderOrderSheet() {
+  const cats = {};
+  currentMenuItems.forEach(item => {
+    const cat = item.category || 'Other';
+    if (!cats[cat]) cats[cat] = [];
+    cats[cat].push(item);
+  });
+  
+  const subtotal = Object.entries(orderCart).reduce((s, [id, q]) => {
+    const item = currentMenuItems.find(m => m.id === id);
+    return s + (item ? item.price * q : 0);
+  }, 0);
+  const itemCount = Object.values(orderCart).reduce((s, q) => s + q, 0);
+  
+  let html = '';
+  Object.entries(cats).forEach(([cat, catItems]) => {
+    html += `<div class="menu-category-title">${cat}</div>`;
+    catItems.forEach(item => {
+      const qty = orderCart[item.id] || 0;
+      const dot = item.isVeg !== false
+        ? `<span class="menu-veg-dot"></span>`
+        : `<span class="menu-nonveg-dot"></span>`;
+      html += `
+      <div class="order-item-row">
+        <div class="order-item-name">${dot}${item.name || '—'}</div>
+        <div class="qty-ctrl">
+          <button class="qty-btn minus" onclick="updateCart('${item.id}', -1)">−</button>
+          <span class="qty-count" id="qty_${item.id}">${qty}</span>
+          <button class="qty-btn" onclick="updateCart('${item.id}', 1)">+</button>
+        </div>
+        <div class="order-item-price">₹${item.price || 0}</div>
+      </div>`;
+    });
+  });
+  
+  html += `
+  <div class="order-subtotal">
+    <div class="order-subtotal-row">
+      <span class="order-subtotal-label">Items selected</span>
+      <span class="order-subtotal-val">${itemCount}</span>
+    </div>
+    <div class="order-total-row">
+      <span class="order-total-label">Bill Total</span>
+      <span class="order-total-val">₹${subtotal}</span>
+    </div>
+  </div>`;
+  
+  if (subtotal > 0) {
+    html += `<button class="btn-primary" onclick="proceedOrderPayment()">💳 Pay Bill ₹${subtotal} →</button>`;
+  } else {
+    html += `<button class="btn-primary" style="opacity:0.5;cursor:not-allowed;" disabled>Select items to pay →</button>`;
+  }
+  
+  document.getElementById('orderSheetBody').innerHTML = html;
+}
+
+function updateCart(itemId, delta) {
+  const current = orderCart[itemId] || 0;
+  const newQty = Math.max(0, current + delta);
+  if (newQty === 0) delete orderCart[itemId]; else orderCart[itemId] = newQty;
+  
+  // Update qty display without full re-render
+  const qtyEl = document.getElementById('qty_' + itemId);
+  if (qtyEl) qtyEl.textContent = newQty;
+  
+  // Re-render subtotal/buttons
+  const subtotal = Object.entries(orderCart).reduce((s, [id, q]) => {
+    const item = currentMenuItems.find(m => m.id === id);
+    return s + (item ? item.price * q : 0);
+  }, 0);
+  const itemCount = Object.values(orderCart).reduce((s, q) => s + q, 0);
+  
+  const subtotalEl = document.querySelector('.order-subtotal');
+  if (subtotalEl) {
+    subtotalEl.innerHTML = `
+      <div class="order-subtotal-row">
+        <span class="order-subtotal-label">Items selected</span>
+        <span class="order-subtotal-val">${itemCount}</span>
+      </div>
+      <div class="order-total-row">
+        <span class="order-total-label">Bill Total</span>
+        <span class="order-total-val">₹${subtotal}</span>
+      </div>`;
+  }
+  
+  // Update pay button
+  const payBtn = subtotalEl ? subtotalEl.nextElementSibling : null;
+  if (payBtn) {
+    if (subtotal > 0) {
+      payBtn.disabled = false;
+      payBtn.style.opacity = '1';
+      payBtn.style.cursor = 'pointer';
+      payBtn.onclick = proceedOrderPayment;
+      payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">💳 Pay Bill ₹${subtotal} →</span>`;
+    } else {
+      payBtn.disabled = true;
+      payBtn.style.opacity = '0.5';
+      payBtn.style.cursor = 'not-allowed';
+      payBtn.innerHTML = `<div class="btn-spinner"></div><span class="btn-text">Select items to pay →</span>`;
+    }
+  }
+}
+
+function proceedOrderPayment() {
+  const subtotal = Object.entries(orderCart).reduce((s, [id, q]) => {
+    const item = currentMenuItems.find(m => m.id === id);
+    return s + (item ? item.price * q : 0);
+  }, 0);
+  if (subtotal === 0) { showToast('Please add items to your order', 'red'); return; }
+  
+  paymentMode = 'order';
+  document.getElementById('paymentSheetTitle').textContent = 'Pay Bill';
+  document.getElementById('paymentLabel').textContent = `Order at ${currentOrderBooking.restaurantName}`;
+  document.getElementById('payAmount').textContent = '₹' + subtotal;
+  document.getElementById('payNowBtn').querySelector('.btn-text').textContent = `🔒 Pay ₹${subtotal} →`;
+  
+  closeOrderSheet();
+  setTimeout(() => {
+    document.getElementById('paymentBackdrop').classList.add('open');
+    document.getElementById('paymentSheet').classList.add('open');
+  }, 300);
+}
+
+function closeOrderSheet() {
+  document.getElementById('orderBackdrop').classList.remove('open');
+  document.getElementById('orderSheet').classList.remove('open');
 }
 
 // ── TAB SWITCH ──
@@ -1400,27 +1991,17 @@ function switchTab(tab) {
 async function gateSignIn() {
   const btn = document.getElementById('gateSignInBtn');
   const note = document.getElementById('gateLoadingNote');
-  btn.disabled = true;
-  note.style.display = 'block';
+  btn.disabled = true; note.style.display = 'block';
   try {
     await window.__googleSignIn();
-    // onAuthStateChanged will fire and handle the rest.
   } catch(e) {
-    btn.disabled = false;
-    note.style.display = 'none';
-    if (e.code !== 'auth/popup-closed-by-user') {
-      showToast('Sign-in failed. Try again.', 'red');
-    }
+    btn.disabled = false; note.style.display = 'none';
+    if (e.code !== 'auth/popup-closed-by-user') showToast('Sign-in failed. Try again.', 'red');
   }
 }
 
-async function handleSignOut(evt) {
-  if (evt) evt.preventDefault();
-  try {
-    await window.__signOut();
-  } catch (e) {
-    console.error('Sign-out error:', e);
-  }
+async function handleSignOut() {
+  try { await window.__signOut(); } catch (e) { console.error('Sign-out error:', e); }
   sessionStorage.removeItem('fn_user');
   window.location.href = './index.html';
 }

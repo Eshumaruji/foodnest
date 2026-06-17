@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Aahaar Saathi — Home</title>
+<title>FoodNest — Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800;900&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -558,7 +558,7 @@ footer em { color: #5A3A1A; font-style: normal; }
     <path d="M42 118 Q33 68 72 34 Q108 2 132 22 Q82 32 68 74 Q54 108 82 132 Q54 138 42 118Z" fill="#E8501A"/>
     <path d="M45 115 Q38 68 74 36 Q105 8 128 26 Q84 36 72 72 Q60 106 84 128 Q56 135 45 115Z" fill="#FF6030"/>
     <path d="M75 40 Q90 25 108 32 Q95 38 85 50Z" fill="rgba(255,255,255,0.25)"/>
-    <text x="78" y="92" font-family="Montserrat, sans-serif" font-weight="900" font-size="36" fill="white" text-anchor="middle" letter-spacing="-1">AS</text>
+    <text x="78" y="92" font-family="Montserrat, sans-serif" font-weight="900" font-size="28" fill="white" text-anchor="middle" letter-spacing="-1">FoodNest</text>
   </svg>
   <div class="splash-sub">Your food companion</div>
   <div class="splash-dots">
@@ -581,7 +581,7 @@ footer em { color: #5A3A1A; font-style: normal; }
       <path d="M75 40 Q90 25 108 32 Q95 38 85 50Z" fill="rgba(255,255,255,0.25)"/>
     </svg>
     <div class="header-logo-text">
-      Aahaar Saathi
+      FoodNest
       <em>Your Food Companion</em>
     </div>
   </div>
@@ -615,13 +615,13 @@ footer em { color: #5A3A1A; font-style: normal; }
 <!-- MINI MENU -->
 <div class="gs-backdrop" id="gsBackdrop" onclick="closeGetStarted()"></div>
 <div class="gs-menu" id="gsMenu">
-  <div class="gs-menu-title">Welcome to Aahaar Saathi</div>
+  <div class="gs-menu-title">Welcome to FoodNest</div>
   <div class="gs-menu-sub">What would you like to do?</div>
   <button class="gs-option" onclick="selectRole('owner')">
     <span class="gs-option-icon">🏪</span>
     <div>
       <div class="gs-option-title">Register My Restaurant</div>
-      <div class="gs-option-desc">List your restaurant on Aahaar Saathi</div>
+      <div class="gs-option-desc">List your restaurant on FoodNest</div>
     </div>
   </button>
   <button class="gs-option" onclick="selectRole('customer')">
@@ -919,7 +919,7 @@ footer em { color: #5A3A1A; font-style: normal; }
 
 <!-- FOOTER -->
 <footer>
-  Made with ❤️ in <em>Mysuru</em> · Aahaar Saathi © 2025
+  Made with ❤️ in <em>Mysuru</em> · FoodNest © 2025
 </footer>
 
 </div><!-- /page -->
@@ -957,7 +957,7 @@ document.addEventListener('change', function(e) {
     if (e.target.value === 'owner') {
       note.innerHTML = '<strong>Restaurant Owner?</strong> Sign in with the Google account linked to your registered email address.';
     } else {
-      note.innerHTML = '<strong>Customer?</strong> Sign in with the Google account you used when creating your Aahaar Saathi account.';
+      note.innerHTML = '<strong>Customer?</strong> Sign in with the Google account you used when creating your FoodNest account.';
     }
   }
 });
@@ -1069,7 +1069,7 @@ async function submitOwner() {
       .replace(/[^a-z0-9-]/g, '') || 'india';
 
     // Save slug + docId to sessionStorage so owner.html can pick it up
-    sessionStorage.setItem('as_user', JSON.stringify({
+    sessionStorage.setItem('fn_user', JSON.stringify({
       id: docRef.id,
       role: 'owner',
       name: restName.trim(),
@@ -1126,8 +1126,8 @@ async function submitCustomer() {
     });
 
     btn.classList.remove('loading'); btn.disabled = false;
-    showToast('🎉 Welcome to Aahaar Saathi!', 'green');
-    sessionStorage.setItem('as_user', JSON.stringify({
+    showToast('🎉 Welcome to FoodNest!', 'green');
+    sessionStorage.setItem('fn_user', JSON.stringify({
       id: docRef.id,
       role: 'customer',
       name: custName.trim(),
@@ -1157,7 +1157,7 @@ async function submitLogin() {
   btn.classList.add('loading'); btn.disabled = true;
 
   // Save role to sessionStorage so we can retrieve it after redirect
-  sessionStorage.setItem('as_pending_login_role', role);
+  sessionStorage.setItem('fn_pending_login_role', role);
 
   try {
     let result;
@@ -1217,7 +1217,7 @@ async function handleLoginResult(result, role, btn) {
   }
 
   const userData = snap.docs[0].data();
-  sessionStorage.setItem('as_user', JSON.stringify({
+  sessionStorage.setItem('fn_user', JSON.stringify({
     id: snap.docs[0].id,
     role,
     name: role === 'owner' ? userData.ownerName : userData.name,
@@ -1252,8 +1252,8 @@ window.addEventListener('load', async () => {
     try {
       const result = await window.__getRedirectResult();
       if (result && result.user) {
-        const role = sessionStorage.getItem('as_pending_login_role') || 'owner';
-        sessionStorage.removeItem('as_pending_login_role');
+        const role = sessionStorage.getItem('fn_pending_login_role') || 'owner';
+        sessionStorage.removeItem('fn_pending_login_role');
         await handleLoginResult(result, role, null);
       }
     } catch (err) {

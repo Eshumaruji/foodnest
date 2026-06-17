@@ -13,7 +13,6 @@
   --success:#27AE60;--arrived:#1A7A4A;--danger:#E53935;--info:#1565C0;
   --radius:16px;--sm:10px;--shadow:0 4px 24px rgba(232,112,26,0.12);
 }
-}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'Ubuntu',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden}
@@ -1749,27 +1748,32 @@ async function openDishDetail(dishId) {
   const dish = custDishMenu.find(d=>d.id===dishId);
   if (!dish) return;
   document.getElementById('dishDetailTitle').textContent = dish.name;
+  const stars = getDishLikelihood(dish);
   document.getElementById('dishDetailBody').innerHTML = `
     <div style="height:160px;background:linear-gradient(135deg,#FFF0E0,#FFE0C0);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:4rem;margin-bottom:16px">
-      ${dish.image&&dish.image.length<=4?dish.image:`<img src="${dish.image}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`}
+      ${dish.image&&dish.image.length<=4 ? dish.image : `<img src="${dish.image}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`}
     </div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.2rem;color:var(--dark)">${esc(dish.name)}</div>
     <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.1rem;color:var(--saffron);margin:6px 0">₹${dish.price}</div>
-    ${dish.cookTime?`<div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">⏱ Ready in ${dish.cookTime}</div>`:''}
+    ${dish.cookTime ? `<div style="font-size:0.78rem;color:var(--muted);margin-bottom:6px">⏱ Ready in ${dish.cookTime}</div>` : ''}
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-      <span style="font-size:0.95rem;letter-spacing:1.5px">${renderStars(getDishLikelihood(dish))}</span>
-      <span style="font-size:0.72rem;color:var(--muted)">${likelihoodLabel(getDishLikelihood(dish))}</span>
+      <span style="font-size:0.95rem;letter-spacing:1.5px">${renderStars(stars)}</span>
+      <span style="font-size:0.72rem;color:var(--muted)">${likelihoodLabel(stars)}</span>
     </div>
+    <div id="dishFunFact" style="background:var(--cream);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:0.78rem;color:var(--ink);line-height:1.6;margin-top:8px">
+      Loading fun fact…
+    </div>
+  `;
   document.getElementById('dishDetailOverlay').classList.add('open');
   document.getElementById('dishDetailDrawer').classList.add('open');
-  document.body.style.overflow='hidden';
+  document.body.style.overflow = 'hidden';
   document.getElementById('dishDetailAddBtn').onclick = () => { custAddToCart(dishId); closeDishDetail(); };
   try {
-    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:"Give ONE short fun fact about the dish \"" + dish.name + "\" in 1-2 sentences. Just the fact, no preamble."}]})});
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},body:JSON.stringify({model:'llama3-8b-8192',max_tokens:80,messages:[{role:'user',content:`Give ONE short fun fact about the dish "${dish.name}" in 1-2 sentences. Just the fact, no preamble.`}]})});
     const data = await resp.json();
-    document.getElementById('dishFunFact').innerHTML = "<span style=\"font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)\">🤔 Fun Fact</span><br>${data.choices[0].message.content.trim()}";
+    document.getElementById('dishFunFact').innerHTML = `<span style="font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)">🤔 Fun Fact</span><br>${data.choices[0].message.content.trim()}`;
   } catch(_) {
-    document.getElementById('dishFunFact').innerHTML = "<span style=\"font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)\">🤔 Fun Fact</span><br>Every dish has a story — this one's been delighting diners for generations!";
+    document.getElementById('dishFunFact').innerHTML = `<span style="font-family:'Montserrat',sans-serif;font-weight:700;color:var(--saffron)">🤔 Fun Fact</span><br>Every dish has a story — this one's been delighting diners for generations!`;
   }
 }
 function closeDishDetail() {
@@ -1793,38 +1797,38 @@ async function renderOrders() {
 }
 
 function renderOrderCardHtml(order, tables) {
-  const statusClass = order.billRequested?'bill-req':'';
+  const statusClass = order.billRequested ? 'bill-req' : '';
   const chip = order.billRequested
     ? '<span class="order-status-chip chip-bill">🧾 Bill Requested</span>'
-    : order.kitchenStatus==='done'
+    : order.kitchenStatus === 'done'
       ? '<span class="order-status-chip chip-kitchen-done">✅ Kitchen Done</span>'
-      : order.status==='ready'
+      : order.status === 'ready'
         ? '<span class="order-status-chip chip-ready">✓ Ready</span>'
         : '<span class="order-status-chip chip-preparing">⏳ Preparing</span>';
   const itemRows = order.items.map(i =>
-    "<div class=\"order-item-row\">
-      <span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}${i.done?' <span style=\"color:var(--success);font-size:0.65rem;font-weight:700\">✓ Done</span>':''}</span>
+    `<div class="order-item-row">
+      <span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}${i.done ? ' <span style="color:var(--success);font-size:0.65rem;font-weight:700">✓ Done</span>' : ''}</span>
       <span class="price">₹${i.price*i.qty}</span>
-    </div>"
+    </div>`
   ).join('');
   const tbl = (tables||[]).find(t=>t.id===order.tableId);
-  return "<div class=\"order-card ${statusClass}\">
-    <div class=\"order-card-header\">
+  return `<div class="order-card ${statusClass}">
+    <div class="order-card-header">
       <div>
-        <div class=\"order-card-title\">🪑 ${tbl?esc(tbl.name):'Table'} · #${order.id.slice(-6).toUpperCase()}</div>
-        <div class=\"order-card-meta\">${new Date(order.placedAt).toLocaleTimeString()} · ${order.items.length} item(s)</div>
+        <div class="order-card-title">🪑 ${tbl?esc(tbl.name):'Table'} · #${order.id.slice(-6).toUpperCase()}</div>
+        <div class="order-card-meta">${new Date(order.placedAt).toLocaleTimeString()} · ${order.items.length} item(s)</div>
       </div>
       ${chip}
     </div>
-    <div class=\"order-items-list\">
+    <div class="order-items-list">
       ${itemRows}
-      <div class=\"order-total-row\"><span>Total</span><span class=\"price\">₹${order.total}</span></div>
+      <div class="order-total-row"><span>Total</span><span class="price">₹${order.total}</span></div>
     </div>
-    <div class=\"order-actions\">
-      ${order.status!=='ready'&&order.kitchenStatus!=='done'?`<button class=\"btn btn-success btn-sm\" data-ready-order=\"${order.id}\">✓ Mark Ready</button>`:''}
-      <button class=\"btn btn-primary btn-sm\" data-bill-order="${order.id}\">🧾 ${order.billRequested?'Generate Bill':'View Bill'}</button>
+    <div class="order-actions">
+      ${order.status!=='ready'&&order.kitchenStatus!=='done' ? `<button class="btn btn-success btn-sm" data-ready-order="${order.id}">✓ Mark Ready</button>` : ''}
+      <button class="btn btn-primary btn-sm" data-bill-order="${order.id}">🧾 ${order.billRequested ? 'Generate Bill' : 'View Bill'}</button>
     </div>
-  </div>";
+  </div>`;
 }
 
 function wireOrderButtons() {
@@ -1856,20 +1860,20 @@ async function recalcBill() {
   const sgstAmt = (order.total*sgst/100).toFixed(2);
   const grandTotal = (order.total+parseFloat(cgstAmt)+parseFloat(sgstAmt)).toFixed(2);
   const tbl = tables.find(t=>t.id===order.tableId);
-  document.getElementById('billPreviewContainer').innerHTML = "
-    <div class=\"bill-preview\">
-      <div class=\"bill-header\">
-        <div class=\"bill-logo\">Food Nest</div>
-        <div class=\"bill-info\">${esc(currentUser.name)}<br>Bill · ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
-        <div class=\"bill-info\">Table: ${tbl?esc(tbl.name):'—'} · Order #${order.id.slice(-6).toUpperCase()}</div>
+  document.getElementById('billPreviewContainer').innerHTML = `
+    <div class="bill-preview">
+      <div class="bill-header">
+        <div class="bill-logo">Food Nest</div>
+        <div class="bill-info">${esc(currentUser.name)}<br>Bill · ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}</div>
+        <div class="bill-info">Table: ${tbl?esc(tbl.name):'—'} · Order #${order.id.slice(-6).toUpperCase()}</div>
       </div>
-      ${order.items.map(i=>`<div class=\"bill-row\"><span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}</span><span>₹${i.price*i.qty}</span></div>`).join('')}
-      <div class=\"bill-tax\">Subtotal: ₹${order.total}</div>
-      <div class=\"bill-tax\">CGST (${cgst}%): ₹${cgstAmt}</div>
-      <div class=\"bill-tax\">SGST (${sgst}%): ₹${sgstAmt}</div>
-      <div class=\"bill-row total\"><span>Grand Total</span><span class=\"price\">₹${grandTotal}</span></div>
-      <div class=\"bill-footer\">Thank you for dining with us!<br>Food Nest — Your Food Companion 🧡</div>
-    </div>";
+      ${order.items.map(i=>`<div class="bill-row"><span>${i.image&&i.image.length<=4?i.image:'🍛'} ${esc(i.name)} ×${i.qty}</span><span>₹${i.price*i.qty}</span></div>`).join('')}
+      <div class="bill-tax">Subtotal: ₹${order.total}</div>
+      <div class="bill-tax">CGST (${cgst}%): ₹${cgstAmt}</div>
+      <div class="bill-tax">SGST (${sgst}%): ₹${sgstAmt}</div>
+      <div class="bill-row total"><span>Grand Total</span><span class="price">₹${grandTotal}</span></div>
+      <div class="bill-footer">Thank you for dining with us!<br>Food Nest — Your Food Companion 🧡</div>
+    </div>`;
   activeBillOrder = {order,cgst,sgst,cgstAmt,sgstAmt,grandTotal:parseFloat(grandTotal)};
 }
 
@@ -1899,14 +1903,14 @@ async function renderHistory() {
   }
   document.getElementById('historyContainer').innerHTML = bills.map(b => {
     const tbl = tables.find(t=>t.id===b.tableId);
-    return "<div class=\"history-item\">
-      <div class=\"history-icon\">🧾</div>
-      <div class=\"history-info\">
-        <div class=\"history-title\">${tbl?esc(tbl.name):'Table'} · #${b.orderId.slice(-6).toUpperCase()}</div>
-        <div class=\"history-meta\">${new Date(b.paidAt).toLocaleString()} · ${b.items.length} items</div>
+    return `<div class="history-item">
+      <div class="history-icon">🧾</div>
+      <div class="history-info">
+        <div class="history-title">${tbl?esc(tbl.name):'Table'} · #${b.orderId.slice(-6).toUpperCase()}</div>
+        <div class="history-meta">${new Date(b.paidAt).toLocaleString()} · ${b.items.length} items</div>
       </div>
-      <div class=\"history-amount\">₹${b.total}</div>
-    </div>";
+      <div class="history-amount">₹${b.total}</div>
+    </div>`;
   }).join('');
 }
 
@@ -1930,7 +1934,7 @@ async function initCustomerView() {
   // Table name
   const tables = await getTables(customerState.restUserId);
   const tbl = tables.find(t=>t.id===customerState.tableId);
-  document.getElementById('custTableBadge').textContent = "🪑 ${tbl?tbl.name:customerState.tableId}";
+  document.getElementById('custTableBadge').textContent = `🪑 ${tbl ? tbl.name : customerState.tableId}`;
 
   // Register session
   const sessionObj = {
@@ -1969,7 +1973,7 @@ async function initCustomerView() {
 
   window.addEventListener('beforeunload', () => {
     navigator.sendBeacon&&navigator.sendBeacon('/api/noop');
-    const url = "https://firestore.googleapis.com/v1/projects/aahaarsaathi/databases/(default)/documents/sessions/${customerState.restUserId}/items/${customerState.sessionId}";
+    const url = `https://firestore.googleapis.com/v1/projects/aahaarsaathi/databases/(default)/documents/sessions/${customerState.restUserId}/items/${customerState.sessionId}`;
     fetch(url,{method:'DELETE',keepalive:true}).catch(()=>{});
     navigator.geolocation&&geoWatch&&navigator.geolocation.clearWatch(geoWatch);
     clearInterval(heartbeat);
@@ -2015,16 +2019,14 @@ async function initCustomerView() {
       customerState.placedOrders.forEach(po => {
         const live = myOrders.find(o=>o.id===po.orderId);
         if(live){
-          po.items        = live.items;       // picks up per-item done flags
+          po.items        = live.items;
           po.kitchenStatus= live.kitchenStatus;
           po.status       = live.status;
         }
       });
-      // Remove only orders that are paid
       customerState.placedOrders = customerState.placedOrders.filter(po=>{
         const live=myOrders.find(o=>o.id===po.orderId);
-        // keep if still in Firestore (not yet paid+deleted); mark paid if status===paid
-        if(!live) po.status='paid';  // order was marked paid and may have been wiped — keep receipt briefly
+        if(!live) po.status='paid';
         return true;
       });
     }
@@ -2050,7 +2052,7 @@ function showOrderReadyBanner() {
   banner.classList.add('show');
   // Try browser notification
   if ('Notification' in window && Notification.permission === 'granted') {
-    new Notification('🎉 Your order is ready!', { body: 'The kitchen has prepared your food. It\'ll be with you shortly.' });
+    new Notification('🎉 Your order is ready!', { body: "The kitchen has prepared your food. It'll be with you shortly." });
   } else if ('Notification' in window && Notification.permission !== 'denied') {
     Notification.requestPermission().then(p => {
       if (p === 'granted') new Notification('🎉 Your order is ready!', { body: 'The kitchen has prepared your food.' });
@@ -2068,7 +2070,7 @@ function showDeniedScreen(reason) {
   document.querySelector('.cust-hero').style.opacity='0.4';
   const icon=document.getElementById('deniedIcon'), title=document.getElementById('deniedTitle'), sub=document.getElementById('deniedSub');
   if (reason==='kicked') {
-    icon.textContent='👢'; title.textContent='You\'ve Been Removed';
+    icon.textContent='👢'; title.textContent="You've Been Removed";
     sub.textContent='The restaurant owner has removed you from this session. Please speak to a staff member.';
   } else if (reason==='paid') {
     icon.textContent='🎉'; title.textContent='Bill Paid!';
@@ -2104,9 +2106,9 @@ function renderCustMenu() {
   let html='';
   catOrder.forEach(cat=>{
     if(!grouped[cat]?.length) return;
-    html+="<div class=\"menu-section-title\">${catLabels[cat]}<span class=\"badge\">${grouped[cat].length}</span></div><div class=\"menu-grid\">";
+    html+=`<div class="menu-section-title">${catLabels[cat]}<span class="badge">${grouped[cat].length}</span></div><div class="menu-grid">`;
     grouped[cat].forEach((d,i)=>{html+=custDishCardHtml(d,i);});
-    html+="</div>";
+    html+=`</div>`;
   });
   wrap.innerHTML=html;
   wrap.querySelectorAll('[data-detail-dish]').forEach(btn =>
@@ -2124,12 +2126,11 @@ function getCurrentSlot(date = new Date()) {
   if (h >= 11 && h < 16) return 'Lunch';
   if (h >= 16 && h < 19) return 'Evening Snack';
   if (h >= 19 && h < 23) return 'Dinner';
-  return 'Dinner'; // late night — closest to dinner/next breakfast
+  return 'Dinner';
 }
 
 function getDishLikelihood(dish) {
   const slots = dish.availableSlots || [];
-  // Signature & Daily Special dishes are positioned as round-the-clock items
   if (!slots.length || slots.includes('All Day') || dish.category === 'signature' || dish.category === 'daily') {
     return 5;
   }
@@ -2142,7 +2143,7 @@ function getDishLikelihood(dish) {
     const idx = SLOT_ORDER.indexOf(s);
     if (idx === -1) return;
     const raw = Math.abs(idx - curIdx);
-    const dist = Math.min(raw, SLOT_ORDER.length - raw); // circular distance
+    const dist = Math.min(raw, SLOT_ORDER.length - raw);
     if (dist < minDist) minDist = dist;
   });
   if (minDist === Infinity) return 3;
@@ -2167,21 +2168,23 @@ function likelihoodLabel(stars) {
   return 'Unlikely right now';
 }
 
-function custDishCardHtml(d,i) {
-  const isEmoji=d.image&&d.image.length<=4;
-  const imgHtml=isEmoji?"<div style=\"font-size:2.6rem;display:flex;align-items:center;justify-content:center;height:100%\">${d.image}</div>":"<img src=\"${d.image}\" onerror=\"this.outerHTML='<div style=font-size:2.6rem>🍛</div>'\" style=\"width:100%;height:100%;object-fit:cover\"/>";
-  const catMap={regional:'',signature:'signature',daily:'daily',festive:'festive'};
-  const catNames={regional:'Regional',signature:'Signature ⭐',daily:'Daily',festive:'Festive 🎉'};
+function custDishCardHtml(d, i) {
+  const isEmoji = d.image && d.image.length <= 4;
+  const imgHtml = isEmoji
+    ? `<div style="font-size:2.6rem;display:flex;align-items:center;justify-content:center;height:100%">${d.image}</div>`
+    : `<img src="${d.image}" onerror="this.outerHTML='<div style=font-size:2.6rem>🍛</div>'" style="width:100%;height:100%;object-fit:cover"/>`;
+  const catMap   = {regional:'',signature:'signature',daily:'daily',festive:'festive'};
+  const catNames = {regional:'Regional',signature:'Signature ⭐',daily:'Daily',festive:'Festive 🎉'};
   const stars = getDishLikelihood(d);
-  return "<div class=\"dish-card\" style=\"animation-delay:${i*0.04}s\">
-    <div class=\"dish-img-wrap\">${imgHtml}<span class=\"cat-badge ${catMap[d.category]||''}\">${catNames[d.category]||'Regional'}</span></div>
-    <div class=\"dish-body\">
-      <div class=\"dish-name\">${esc(d.name)}</div>
-      <div class=\"dish-footer-row\"><div class=\"dish-price\">₹${d.price}</div><button class=\"add-btn\" data-detail-dish=\"${d.id}\">→</button></div>
-      <div style=\"font-size:0.6rem;color:var(--muted);margin-top:3px'\">⏱ ${d.cookTime}</div>:''}
-      <div style=\"font-size:0.74rem;letter-spacing:1px;margin-top:5px\" title=\"${likelihoodLabel(stars)}\">${renderStars(stars)}</div>
+  return `<div class="dish-card" style="animation-delay:${i*0.04}s">
+    <div class="dish-img-wrap">${imgHtml}<span class="cat-badge ${catMap[d.category]||''}">${catNames[d.category]||'Regional'}</span></div>
+    <div class="dish-body">
+      <div class="dish-name">${esc(d.name)}</div>
+      <div class="dish-footer-row"><div class="dish-price">₹${d.price}</div><button class="add-btn" data-detail-dish="${d.id}">→</button></div>
+      ${d.cookTime ? `<div style="font-size:0.6rem;color:var(--muted);margin-top:3px">⏱ ${d.cookTime}</div>` : ''}
+      <div style="font-size:0.74rem;letter-spacing:1px;margin-top:5px" title="${likelihoodLabel(stars)}">${renderStars(stars)}</div>
     </div>
-  </div>";
+  </div>`;
 }
 
 function custAddToCart(dishId) {
@@ -2205,57 +2208,54 @@ function renderCustCartDrawer() {
   const el=document.getElementById('custCartItems');
   const placed=customerState.placedOrders||[];
 
-  // ── Placed orders section ──
   const statusBg    ={'preparing':'#FFF8E1','done':'#E8F5EE','paid':'#F0F4FF'};
   const statusColor ={'preparing':'#E65100','done':'var(--success)','paid':'var(--info)'};
   const statusLabel ={'preparing':'⏳ In Progress','done':'✅ Prepared','paid':'💰 Paid'};
 
   let placedHtml='';
   if (placed.length) {
-  placedHtml = `
-    <div style="margin-bottom:12px">
-      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;padding:0 2px">
-        Your Orders
-      </div>
-      ${placed.map(o => {
-        const allDone = o.items.every(it => it.done);
-        const effStatus =
-          o.status === 'paid'
-            ? 'paid'
-            : (allDone || o.kitchenStatus === 'done'
-                ? 'done'
-                : 'preparing');
-        return `
-          <div style="background:${statusBg[effStatus] || statusBg.preparing};border-radius:12px;padding:10px 13px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.06)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
-              <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:var(--dark)">
-                #${o.orderId.slice(-6).toUpperCase()}
-              </span>
-              <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;color:${statusColor[effStatus] || statusColor.preparing};background:rgba(0,0,0,0.05);padding:2px 9px;border-radius:50px">
-                ${statusLabel[effStatus] || statusLabel.preparing}
-              </span>
-            </div>
-            ${o.items.map(it => `
-              <div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:2px 0;color:${it.done ? 'var(--muted)' : 'var(--ink)'}">
-                <span>
-                  ${it.image && it.image.length <= 4 ? it.image + ' ' : ''}
-                  ${esc(it.name)} ×${it.qty}
-                  ${it.done ? ' <span style="color:var(--success);font-size:0.65rem">✓</span>' : ''}
+    placedHtml = `
+      <div style="margin-bottom:12px">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:8px;padding:0 2px">
+          Your Orders
+        </div>
+        ${placed.map(o => {
+          const allDone = o.items.every(it => it.done);
+          const effStatus =
+            o.status === 'paid'
+              ? 'paid'
+              : (allDone || o.kitchenStatus === 'done' ? 'done' : 'preparing');
+          return `
+            <div style="background:${statusBg[effStatus]||statusBg.preparing};border-radius:12px;padding:10px 13px;margin-bottom:8px;border:1px solid rgba(0,0,0,0.06)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">
+                <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;color:var(--dark)">
+                  #${o.orderId.slice(-6).toUpperCase()}
                 </span>
-                <span style="font-family:'Montserrat',sans-serif;font-weight:600">
-                  ₹${it.price * it.qty}
+                <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.68rem;color:${statusColor[effStatus]||statusColor.preparing};background:rgba(0,0,0,0.05);padding:2px 9px;border-radius:50px">
+                  ${statusLabel[effStatus]||statusLabel.preparing}
                 </span>
               </div>
-            `).join('')}
-            <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--saffron);text-align:right;margin-top:6px;padding-top:5px;border-top:1px dashed var(--border)">
-              ₹${o.total}
+              ${o.items.map(it => `
+                <div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:2px 0;color:${it.done?'var(--muted)':'var(--ink)'}">
+                  <span>
+                    ${it.image && it.image.length <= 4 ? it.image + ' ' : ''}
+                    ${esc(it.name)} ×${it.qty}
+                    ${it.done ? ' <span style="color:var(--success);font-size:0.65rem">✓</span>' : ''}
+                  </span>
+                  <span style="font-family:'Montserrat',sans-serif;font-weight:600">
+                    ₹${it.price * it.qty}
+                  </span>
+                </div>
+              `).join('')}
+              <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.8rem;color:var(--saffron);text-align:right;margin-top:6px;padding-top:5px;border-top:1px dashed var(--border)">
+                ₹${o.total}
+              </div>
             </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `;
-}
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
 
   // ── Empty cart ──
   if(!customerState.cart.length){
@@ -2316,7 +2316,6 @@ async function custPlaceOrder(){
   await updateSessionFB(customerState.restUserId, customerState.sessionId, {
     ordersPlaced:true, lastOrderAt:Date.now(), cartSnapshot:items, orderStatus:'preparing'
   });
-  // Move cart items to placedOrders tracker instead of deleting
   if(!customerState.placedOrders) customerState.placedOrders=[];
   customerState.placedOrders.push({ orderId, items, total, status:'preparing', kitchenStatus:'pending', placedAt:Date.now() });
   customerState.cart=[];

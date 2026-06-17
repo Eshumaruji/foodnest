@@ -2106,7 +2106,7 @@ function renderCustMenu() {
     if(!grouped[cat]?.length) return;
     html+="<div class=\"menu-section-title\">${catLabels[cat]}<span class=\"badge\">${grouped[cat].length}</span></div><div class=\"menu-grid\">";
     grouped[cat].forEach((d,i)=>{html+=custDishCardHtml(d,i);});
-    html+=`</div>`;
+    html+="</div>";
   });
   wrap.innerHTML=html;
   wrap.querySelectorAll('[data-detail-dish]').forEach(btn =>

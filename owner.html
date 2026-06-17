@@ -1191,10 +1191,6 @@ async function renderTables() {
     const hasBillReq   = unpaidOrders.some(o => o.billRequested);
     const hasOrders    = unpaidOrders.length > 0;
     const recentlyPaid = paidOrders.length > 0 && unpaidOrders.length === 0 && tSessions.length === 0;
-    const occupied     = tSessions.length > 0;
-    const activeBooking = getActiveBooking(t.id);
-    const isBooked     = !!activeBooking && !occupied;
-
     const occupied      = tSessions.length > 0;
     const activeBooking = getActiveBooking(t.id);
     const isBooked      = !!activeBooking && !occupied;

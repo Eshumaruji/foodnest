@@ -1598,10 +1598,29 @@ function closeTableDetail() { document.getElementById('tableDetailOverlay').clas
 
 // ── BOOKINGS ─────────────────────────────────────────────────
 async function renderBookings() {
-  const snap = await getDocs(collection(fdb, 'bookings'));
-  const bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .filter(b => b.restaurantId === currentUser.id || b.restaurantName === currentUser.name)
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  const [snap, orders] = await Promise.all([
+    getDocs(collection(fdb, 'bookings')),
+    getOrders(currentUser.id)
+  ]);
+  let bookings = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(b => b.restaurantId === currentUser.id || b.restaurantName === currentUser.name);
+
+  // Determine paid status: any order tied to this booking's sessionId that is marked paid
+  bookings = bookings.map(b => {
+    const sid = b.sessionId || ('sess_book_' + b.id);
+    const isPaid = orders.some(o => o.sessionId === sid && o.status === 'paid');
+    return { ...b, isPaid };
+  });
+
+  // Remove bookings that have been paid — they're done, archive them out of view
+  bookings = bookings.filter(b => !b.isPaid);
+
+  // Newest first
+  bookings.sort((a, b) => {
+    const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.date || 0).getTime();
+    const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.date || 0).getTime();
+    return bTime - aTime;
+  });
 
   document.getElementById('bookingsCount').textContent = bookings.length;
 
@@ -1668,14 +1687,19 @@ async function renderBookings() {
       <div class="order-actions">
         <button class="btn btn-danger btn-sm" data-reject-booking="${b.id}">❌ Reject & Notify Customer</button>
       </div>` : `
-      <div style="font-size:0.72rem;color:var(--danger);margin-top:6px;font-family:'Montserrat',sans-serif;font-weight:600">
-        Customer has been notified of rejection.
+      <div class="order-actions">
+        <div style="font-size:0.72rem;color:var(--danger);font-family:'Montserrat',sans-serif;font-weight:600;flex:1">
+          Customer has been notified of rejection.
+        </div>
+        <button class="btn btn-secondary btn-sm" data-delete-booking="${b.id}">🗑 Delete</button>
       </div>`}
     </div>`;
   }).join('');
 
   document.querySelectorAll('[data-reject-booking]').forEach(btn =>
     btn.addEventListener('click', () => rejectBooking(btn.dataset.rejectBooking)));
+  document.querySelectorAll('[data-delete-booking]').forEach(btn =>
+    btn.addEventListener('click', () => deleteBooking(btn.dataset.deleteBooking)));
 }
 
 async function rejectBooking(bookingId) {
@@ -1688,6 +1712,13 @@ async function rejectBooking(bookingId) {
   showToast('Booking rejected — customer notified.', 'red');
   renderBookings();
   renderTables();
+}
+
+async function deleteBooking(bookingId) {
+  if (!confirm('Permanently delete this booking? This cannot be undone.')) return;
+  await deleteDoc(doc(fdb, 'bookings', bookingId));
+  showToast('Booking deleted', 'red');
+  renderBookings();
 }
 
 // ── KICK / BLOCK ──────────────────────────────────────────────

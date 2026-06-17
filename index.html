@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodNest — Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;800;900&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDu6WAndsds6PNmTPe7Oq7kFr6-fl8sOe4",
+    authDomain: "aahaarsaathi.firebaseapp.com",
+    projectId: "aahaarsaathi",
+    storageBucket: "aahaarsaathi.firebasestorage.app",
+    messagingSenderId: "673957838336",
+    appId: "1:673957838336:web:44c3a4d2d60f181c4ea2e5",
+    measurementId: "G-V1HBJSPH0G"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const googleProvider = new GoogleAuthProvider();
+
+  window.__db = db;
+  window.__fsCollection = collection;
+  window.__fsAddDoc = addDoc;
+  window.__fsTimestamp = serverTimestamp;
+  window.__fsQuery = query;
+  window.__fsWhere = where;
+  window.__fsGetDocs = getDocs;
+  window.__auth = auth;
+  window.__googleProvider = googleProvider;
+  window.__googleSignIn = async () => {
+    return signInWithPopup(auth, googleProvider);
+  };
+  window.__googleSignInRedirect = async () => {
+    return signInWithRedirect(auth, googleProvider);
+  };
+  window.__getRedirectResult = async () => {
+    return getRedirectResult(auth);
+  };
+</script>
+
+<style>
+:root {
+  --saffron: #E8701A;
+  --deep: #C45A0F;
+  --cream: #FDF6EC;
+  --warm: #FFFAF4;
+  --dark: #1C1C1C;
+  --ink: #2D2D2D;
+  --muted: #7A6A5A;
+  --border: #E8D5BF;
+  --success: #27AE60;
+  --radius: 16px;
+  --sm: 10px;
+  --shadow: 0 4px 24px rgba(232,112,26,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Ubuntu', sans-serif;
+  background: var(--dark);
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SPLASH ── */
+#splash {
+  position: fixed; inset: 0; background: #0D0D0D;
+  z-index: 9999; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  transition: opacity 0.7s ease;
+}
+#splash.hide { opacity: 0; pointer-events: none; }
+.splash-logo-img { width: 180px; animation: splashScale 0.6s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes splashScale { from { opacity:0; transform:scale(0.6); } to { opacity:1; transform:scale(1); } }
+.splash-sub { color: #6A5A4A; font-size: 0.82rem; letter-spacing: 1.5px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; font-weight: 600; animation: fadeIn 0.6s 0.3s both; }
+.splash-dots { display: flex; gap: 7px; margin-top: 18px; animation: fadeIn 0.4s 0.5s both; }
+.splash-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.12); }
+.splash-dot:nth-child(1) { animation: dotPulse 1.2s 0s infinite; }
+.splash-dot:nth-child(2) { animation: dotPulse 1.2s 0.2s infinite; }
+.splash-dot:nth-child(3) { animation: dotPulse 1.2s 0.4s infinite; }
+@keyframes dotPulse { 0%,80%,100%{background:rgba(255,255,255,0.12)}40%{background:var(--saffron)} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── PAGE WRAPPER ── */
+#page { opacity: 0; transition: opacity 0.5s; }
+#page.visible { opacity: 1; }
+
+/* ── HEADER ── */
+header {
+  background: #0D0D0D;
+  padding: 0 24px;
+  height: 66px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.header-logo { display: flex; align-items: center; gap: 10px; }
+.header-logo img { height: 38px; }
+.header-logo-text {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: 1.15rem; color: #fff; letter-spacing: -0.3px;
+  line-height: 1;
+}
+.header-logo-text em { color: var(--saffron); font-style: normal; display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+.header-tagline { font-size: 0.72rem; color: #5A4A3A; font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.5px; }
+
+/* ── HERO ── */
+.hero {
+  position: relative; overflow: hidden;
+  background: #0D0D0D;
+  padding: 60px 24px 80px;
+  text-align: center;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 80%, rgba(232,112,26,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-chili {
+  font-size: 3.5rem;
+  animation: chiliFloat 3s ease-in-out infinite;
+  display: inline-block; margin-bottom: 18px;
+  filter: drop-shadow(0 0 24px rgba(232,112,26,0.5));
+}
+@keyframes chiliFloat {
+  0%,100% { transform: translateY(0) rotate(-8deg); }
+  50% { transform: translateY(-12px) rotate(8deg); }
+}
+.hero h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900; font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.1; color: #fff;
+  position: relative;
+}
+.hero h1 em { color: var(--saffron); font-style: normal; }
+.hero-sub {
+  color: #7A6A5A; font-size: 0.9rem; margin-top: 12px;
+  max-width: 340px; margin-left: auto; margin-right: auto;
+  line-height: 1.6; position: relative;
+}
+.hero-badges {
+  display: flex; gap: 10px; justify-content: center;
+  flex-wrap: wrap; margin-top: 24px; position: relative;
+}
+.hero-badge {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px; padding: 6px 14px;
+  font-size: 0.72rem; color: #9A8A7A;
+  font-family: 'Montserrat', sans-serif; font-weight: 600;
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* ── ROLE SELECTOR ── */
+.role-section {
+  padding: 0 20px 40px;
+  background: #0D0D0D;
+  position: relative;
+}
+.role-section::before {
+  content: '';
+  display: block; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232,112,26,0.4), transparent);
+  margin-bottom: 36px;
+}
+.role-label {
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800; font-size: 0.72rem;
+  text-transform: uppercase; letter-spacing: 2px;
+  color: #4A3A2A; margin-bottom: 16px;
+}
+.role-cards {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 13px; max-width: 480px; margin: 0 auto;
+}
+.role-card {
+  background: #161616;
+  border: 1.5px solid #2A2A2A;
+  border-radius: 18px; padding: 22px 18px;
+  cursor: pointer; text-align: center;
+  transition: all 0.22s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.role-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--saffron), var(--deep));
+  opacity: 0; transition: opacity 0.22s;
+  border-radius: 16px;
+}
+.role-card:hover { border-color: var(--saffron); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(232,112,26,0.2); }
+.role-card.active { border-color: var(--saffron); }
+.role-card.active::before { opacity: 0.08; }
+.role-icon { font-size: 2.2rem; margin-bottom: 10px; position: relative; }
+.role-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.88rem; color: #fff; position: relative;
+}
+.role-desc {
+  font-size: 0.68rem; color: #5A4A3A; margin-top: 5px;
+  line-height: 1.5; position: relative;
+}
+
+/* ── GET STARTED BTN ── */
+.get-started-btn {
+  background: var(--saffron); color: #fff;
+  border: none; border-radius: 50px;
+  padding: 16px 36px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800; font-size: 1rem;
+  cursor: pointer; letter-spacing: 0.3px;
+  box-shadow: 0 8px 32px rgba(232,112,26,0.4);
+  transition: background 0.2s, transform 0.15s;
+  animation: fadeIn 0.5s 0.3s both;
+}
+.get-started-btn:hover { background: var(--deep); transform: translateY(-2px); }
+.get-started-btn:active { transform: scale(0.97); }
+
+/* ── GET STARTED MINI MENU ── */
+.gs-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  z-index: 180; opacity: 0;
+  pointer-events: none; transition: opacity 0.25s;
+}
+.gs-backdrop.open { opacity: 1; pointer-events: all; }
+.gs-menu {
+  position: fixed; bottom: 0; left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: min(480px, 100vw);
+  background: var(--cream);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 22px 36px;
+  z-index: 181;
+  transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.gs-menu.open { transform: translateX(-50%) translateY(0); }
+.gs-menu-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900; font-size: 1.15rem;
+  color: var(--dark); text-align: center;
+}
+.gs-menu-sub {
+  font-size: 0.78rem; color: var(--muted);
+  text-align: center; margin: 5px 0 20px;
+}
+.gs-option {
+  width: 100%; background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; margin-bottom: 10px;
+  text-align: left;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.gs-option:hover { border-color: var(--saffron); box-shadow: var(--shadow); }
+.gs-option-icon { font-size: 1.8rem; flex-shrink: 0; }
+.gs-option-title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; font-size: 0.88rem; color: var(--dark);
+}
+.gs-option-desc { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.gs-signin { background: var(--dark); border-color: var(--dark); }
+.gs-signin .gs-option-title, .gs-signin .gs-option-desc { color: #fff; }
+.gs-signin .gs-option-desc { color: #9A8A7A; }
+.gs-divider {
+  text-align: center; font-size: 0.72rem;
+  color: var(--muted); margin: 14px 0 10px;
+  font-family: 'Montserrat', sans-serif; font-weight: 600;
+}
+
+/* ── FORM SECTION ── */
+.form-section {
+  background: var(--cream);
+  border-radius: 28px 28px 0 0;
+  padding: 32px 22px 48px;
+  min-height: 60vh;
+  position: relative;
+  animation: formSlide 0.4s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes formSlide { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+.form-wrap {
+  max-width: 480px; margin: 0 auto;
+}
+.form-heading {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900; font-size: 1.35rem;
+  color: var(--dark); margin-bottom: 4px;
+}
+.form-sub {
+  font-size: 0.8rem; color: var(--muted);
+  margin-bottom: 24px; line-height: 1.5;
+}
+
+/* ── FORM ELEMENTS ── */
+.form-group { margin-bottom: 16px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+label {
+  display: block; font-family: 'Montserrat', sans-serif;
+  font-weight: 700; font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  color: var(--muted); margin-bottom: 6px;
+}
+input[type="text"], input[type="email"], input[type="tel"], select, textarea {
+  width: 100%; background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--sm); padding: 12px 14px;
+  font-family: 'Ubuntu', sans-serif; font-size: 0.88rem;
+  color: var(--ink); outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  appearance: none; -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--saffron);
+  box-shadow: 0 0 0 3px rgba(232,112,26,0.12);
+}
+input::placeholder { color: #C8B8A0; }
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237A6A5A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+option { background: #fff; color: var(--ink); }
+
+/* ── TOGGLE CHIPS ── */
+.chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-option { display: none; }
+.chip-label {
+  background: #fff; border: 1.5px solid var(--border);
+  border-radius: 50px; padding: 8px 16px;
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.73rem; cursor: pointer; color: var(--muted);
+  transition: all 0.18s; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+}
+.chip-option:checked + .chip-label {
+  background: var(--saffron); border-color: var(--saffron);
+  color: #fff; box-shadow: 0 3px 12px rgba(232,112,26,0.3);
+}
+.chip-label:hover { border-color: var(--saffron); color: var(--saffron); }
+
+/* ── TOGGLE SWITCH ── */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border: 1.5px solid var(--border);
+  border-radius: var(--sm); padding: 13px 16px;
+  cursor: pointer;
+}
+.toggle-info { flex: 1; }
+.toggle-name {
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 0.82rem; color: var(--ink);
+}
+.toggle-hint { font-size: 0.68rem; color: var(--muted); margin-top: 2px; }
+.switch {
+  position: relative; width: 42px; height: 24px; flex-shrink: 0;
+}
+.switch input { display: none; }
+.switch-track {
+  position: absolute; inset: 0;
+  background: #E0D0C0; border-radius: 50px;
+  transition: background 0.2s; cursor: pointer;
+}
+.switch-track::after {
+  content: ''; position: absolute;
+  left: 3px; top: 3px; width: 18px; height: 18px;
+  background: #fff; border-radius: 50%;
+  transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.switch input:checked + .switch-track { background: var(--saffron); }
+.switch input:checked + .switch-track::after { transform: translateX(18px); }
+
+/* ── TIME INPUT ── */
+input[type="time"] { width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: var(--sm); padding: 12px 14px; font-family: 'Ubuntu', sans-serif; font-size: 0.88rem; color: var(--ink); outline: none; transition: border-color 0.18s, box-shadow 0.18s; }
+input[type="time"]:focus { border-color: var(--saffron); box-shadow: 0 0 0 3px rgba(232,112,26,0.12); }
+
+/* ── SECTION DIVIDER ── */
+.form-section-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--saffron);
+  margin: 20px 0 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.form-section-title::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── SUBMIT BTN ── */
+.btn-submit {
+  width: 100%; background: var(--saffron);
+  color: #fff; border: none; border-radius: 50px;
+  padding: 15px; font-family: 'Montserrat', sans-serif;
+  font-weight: 700; font-size: 0.92rem;
+  cursor: pointer; transition: background 0.2s, transform 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; margin-top: 22px;
+  box-shadow: 0 6px 24px rgba(232,112,26,0.35);
+}
+.btn-submit:hover { background: var(--deep); }
+.btn-submit:active { transform: scale(0.98); }
+.btn-submit:disabled { background: #C8B8A0; box-shadow: none; cursor: not-allowed; }
+.btn-submit .btn-spinner {
+  width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none;
+}
+.btn-submit.loading .btn-spinner { display: block; }
+.btn-submit.loading .btn-text { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── GOOGLE SIGN-IN BUTTON ── */
+.btn-google {
+  width: 100%;
+  background: #fff;
+  color: #3C3C3C;
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 14px 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700; font-size: 0.92rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  position: relative;
+}
+.btn-google:hover {
+  border-color: #4285F4;
+  box-shadow: 0 4px 20px rgba(66,133,244,0.18);
+  transform: translateY(-1px);
+}
+.btn-google:active { transform: scale(0.98); }
+.btn-google:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-google .btn-spinner {
+  width: 18px; height: 18px; border: 2.5px solid rgba(60,60,60,0.2);
+  border-top-color: #4285F4; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none;
+}
+.btn-google.loading .btn-spinner { display: block; }
+.btn-google.loading .btn-text { display: none; }
+.btn-google.loading .google-icon { display: none; }
+
+/* Google "G" icon */
+.google-icon {
+  width: 20px; height: 20px; flex-shrink: 0;
+}
+
+/* ── LOGIN CARD ── */
+.login-card {
+  background: #fff;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 28px 24px;
+  margin-top: 8px;
+}
+.login-card-note {
+  font-size: 0.72rem; color: var(--muted);
+  text-align: center; margin-top: 14px;
+  line-height: 1.5;
+  font-family: 'Montserrat', sans-serif; font-weight: 500;
+}
+.login-role-note {
+  background: rgba(232,112,26,0.07);
+  border: 1px solid rgba(232,112,26,0.2);
+  border-radius: var(--sm);
+  padding: 10px 14px;
+  font-size: 0.72rem; color: var(--muted);
+  line-height: 1.5; margin-bottom: 20px;
+  font-family: 'Montserrat', sans-serif; font-weight: 500;
+}
+.login-role-note strong { color: var(--saffron); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--dark); color: #fff;
+  padding: 12px 22px; border-radius: 50px;
+  font-family: 'Montserrat', sans-serif; font-weight: 600;
+  font-size: 0.78rem; z-index: 700; opacity: 0;
+  transition: all 0.3s; white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  pointer-events: none; max-width: 90vw;
+  white-space: normal; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.green { background: var(--success); }
+.toast.red { background: #C0392B; }
+
+/* ── SUCCESS STATE ── */
+.success-screen {
+  text-align: center; padding: 48px 24px;
+  display: none; flex-direction: column;
+  align-items: center; gap: 14px;
+}
+.success-screen.show { display: flex; }
+.success-icon { font-size: 4rem; animation: successBounce 0.6s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes successBounce { from{transform:scale(0)} to{transform:scale(1)} }
+.success-title {
+  font-family: 'Montserrat', sans-serif; font-weight: 900;
+  font-size: 1.3rem; color: var(--dark);
+}
+.success-desc { font-size: 0.84rem; color: var(--muted); max-width: 280px; line-height: 1.6; }
+.success-id {
+  background: #FFF0E0; border: 1px solid #F0C898;
+  border-radius: var(--sm); padding: 10px 18px;
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
+  font-size: 0.78rem; color: var(--saffron);
+  letter-spacing: 0.5px;
+}
+
+/* ── INPUT ERROR ── */
+input.error, select.error { border-color: #C0392B !important; }
+.err-msg { font-size: 0.65rem; color: #C0392B; margin-top: 4px; display: none; font-family: 'Montserrat', sans-serif; font-weight: 600; }
+.err-msg.show { display: block; }
+
+/* ── FOOTER ── */
+footer {
+  background: #0D0D0D; text-align: center;
+  padding: 24px; color: #3A2A1A;
+  font-size: 0.7rem; font-family: 'Montserrat', sans-serif; font-weight: 600;
+}
+footer em { color: #5A3A1A; font-style: normal; }
+
+/* ── RESPONSIVE ── */
+@media(max-width: 420px) {
+  .form-row { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 1.8rem; }
+  .role-cards { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <svg width="160" height="160" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg" class="splash-logo-img">
+    <path d="M40 120 Q30 70 70 35 Q110 0 135 20 Q80 30 65 75 Q50 110 80 135 Q50 140 40 120Z" fill="#C0392B"/>
+    <path d="M42 118 Q33 68 72 34 Q108 2 132 22 Q82 32 68 74 Q54 108 82 132 Q54 138 42 118Z" fill="#E8501A"/>
+    <path d="M45 115 Q38 68 74 36 Q105 8 128 26 Q84 36 72 72 Q60 106 84 128 Q56 135 45 115Z" fill="#FF6030"/>
+    <path d="M75 40 Q90 25 108 32 Q95 38 85 50Z" fill="rgba(255,255,255,0.25)"/>
+    <text x="78" y="92" font-family="Montserrat, sans-serif" font-weight="900" font-size="28" fill="white" text-anchor="middle" letter-spacing="-1">FoodNest</text>
+  </svg>
+  <div class="splash-sub">Your food companion</div>
+  <div class="splash-dots">
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+    <div class="splash-dot"></div>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div id="page">
+
+<!-- HEADER -->
+<header>
+  <div class="header-logo">
+    <svg width="36" height="36" viewBox="0 0 160 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 120 Q30 70 70 35 Q110 0 135 20 Q80 30 65 75 Q50 110 80 135 Q50 140 40 120Z" fill="#C0392B"/>
+      <path d="M42 118 Q33 68 72 34 Q108 2 132 22 Q82 32 68 74 Q54 108 82 132 Q54 138 42 118Z" fill="#E8501A"/>
+      <path d="M45 115 Q38 68 74 36 Q105 8 128 26 Q84 36 72 72 Q60 106 84 128 Q56 135 45 115Z" fill="#FF6030"/>
+      <path d="M75 40 Q90 25 108 32 Q95 38 85 50Z" fill="rgba(255,255,255,0.25)"/>
+    </svg>
+    <div class="header-logo-text">
+      FoodNest
+      <em>Your Food Companion</em>
+    </div>
+  </div>
+  
+  <div style="display:flex;align-items:center;gap:12px">
+    <a class="header-tagline" href="https://www.youtube.com/watch?v=mD1WPJ_G7W4" style="text-decoration: none;">🌶️ IIT Guwahati and beyond</a>
+    <button onclick="openGetStarted();document.getElementById('login').scrollTop=999;" style="background:var(--saffron);color:#fff;border:none;border-radius:50px;padding:8px 18px;font-family:'Montserrat',sans-serif;font-weight:800;font-size:0.75rem;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='var(--deep)'" onmouseout="this.style.background='var(--saffron)'">Sign In →</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-chili">🌶️</div>
+  <h1>India's Flavours,<br><em>One Platform</em></h1>
+  <p class="hero-sub">Connect restaurants and food lovers across every city, every meal, every moment.</p>
+  <div class="hero-badges">
+    <span class="hero-badge">🏪 Restaurants</span>
+    <span class="hero-badge">👨‍👩‍👧 Family Dining</span>
+    <span class="hero-badge">🍱 Advance Booking</span>
+    <span class="hero-badge">⭐ Premium Dining</span>
+  </div>
+</div>
+
+<!-- GET STARTED -->
+<div style="display:flex;justify-content:center;padding:32px 20px 0">
+  <button class="get-started-btn" onclick="openGetStarted()">
+    🍽️ Get Started
+  </button>
+</div>
+
+<!-- MINI MENU -->
+<div class="gs-backdrop" id="gsBackdrop" onclick="closeGetStarted()"></div>
+<div class="gs-menu" id="gsMenu">
+  <div class="gs-menu-title">Welcome to FoodNest</div>
+  <div class="gs-menu-sub">What would you like to do?</div>
+  <button class="gs-option" onclick="selectRole('owner')">
+    <span class="gs-option-icon">🏪</span>
+    <div>
+      <div class="gs-option-title">Register My Restaurant</div>
+      <div class="gs-option-desc">List your restaurant on FoodNest</div>
+    </div>
+  </button>
+  <button class="gs-option" onclick="selectRole('customer')">
+    <span class="gs-option-icon">🍽️</span>
+    <div>
+      <div class="gs-option-title">Join as Customer</div>
+      <div class="gs-option-desc">Find and book great food near you</div>
+    </div>
+  </button>
+  <div class="gs-divider">Already have an account?</div>
+  <button class="gs-option gs-signin" onclick="selectRole('login')">
+    <span class="gs-option-icon">🔑</span>
+    <div>
+      <div class="gs-option-title">Sign In</div>
+      <div class="gs-option-desc">Continue to your dashboard</div>
+    </div>
+  </button>
+</div>
+
+<!-- FORM AREA -->
+<div class="form-section" id="formSection">
+  <div class="form-wrap">
+
+    <!-- SUCCESS SCREEN -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon" id="successIcon">🎉</div>
+      <div class="success-title" id="successTitle">You're registered!</div>
+      <div class="success-desc" id="successDesc">We'll take you to your dashboard shortly.</div>
+      <div class="success-id" id="successId"></div>
+    </div>
+
+    <!-- ─── OWNER FORM ─── -->
+    <div id="ownerForm">
+      <div class="form-heading">Register Your Restaurant</div>
+      <div class="form-sub">Fill in your details and start reaching more customers today.</div>
+
+      <div class="form-section-title">Restaurant Details</div>
+
+      <div class="form-group">
+        <label for="restName">Restaurant Name *</label>
+        <input type="text" id="restName" placeholder="e.g. Spice Garden uru" maxlength="80">
+        <div class="err-msg" id="errRestName">Please enter your restaurant name</div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="ownerName">Owner's Name *</label>
+          <input type="text" id="ownerName" placeholder="Full name" maxlength="60">
+          <div class="err-msg" id="errOwnerName">Required</div>
+        </div>
+        <div class="form-group">
+          <label for="ownerPhone">Phone Number *</label>
+          <input type="tel" id="ownerPhone" placeholder="+91 98765 43210" maxlength="15">
+          <div class="err-msg" id="errOwnerPhone">Enter valid phone</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="ownerEmail">Email Address</label>
+        <input type="email" id="ownerEmail" placeholder="owner@restaurant.com" maxlength="80">
+        <div class="err-msg" id="errOwnerEmail">Enter valid email</div>
+      </div>
+
+      <div class="form-group">
+        <label for="restLocation">Restaurant Location / Address *</label>
+        <input type="text" id="restLocation" placeholder="Street, Area, City, State" maxlength="140">
+        <div class="err-msg" id="errRestLocation">Please enter the location</div>
+      </div>
+
+      <div class="form-section-title">Category & Type</div>
+
+      <div class="form-group">
+        <label>Food Type *</label>
+        <div class="chips-wrap">
+          <input type="radio" name="foodType" id="ftVeg" value="veg" class="chip-option" checked>
+          <label for="ftVeg" class="chip-label">🥦 Pure Veg</label>
+          <input type="radio" name="foodType" id="ftNonVeg" value="nonveg" class="chip-option">
+          <label for="ftNonVeg" class="chip-label">🍗 Non-Veg</label>
+          <input type="radio" name="foodType" id="ftBoth" value="both" class="chip-option">
+          <label for="ftBoth" class="chip-label">🌿 Both</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Restaurant Type *</label>
+        <div class="chips-wrap">
+          <input type="radio" name="restType" id="rtFamily" value="family" class="chip-option" checked>
+          <label for="rtFamily" class="chip-label">👨‍👩‍👧 Family Restaurant</label>
+          <input type="radio" name="restType" id="rtBar" value="bar" class="chip-option">
+          <label for="rtBar" class="chip-label">🍻 Bar & Restaurant</label>
+          <input type="radio" name="restType" id="rtCafe" value="cafe" class="chip-option">
+          <label for="rtCafe" class="chip-label">☕ Café</label>
+          <input type="radio" name="restType" id="rtDhaba" value="dhaba" class="chip-option">
+          <label for="rtDhaba" class="chip-label">🍛 Dhaba</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Price Range *</label>
+        <div class="chips-wrap">
+          <input type="radio" name="priceRange" id="prBudget" value="budget" class="chip-option">
+          <label for="prBudget" class="chip-label">💰 Budget</label>
+          <input type="radio" name="priceRange" id="prMid" value="mid" class="chip-option" checked>
+          <label for="prMid" class="chip-label">💰💰 Mid-Range</label>
+          <input type="radio" name="priceRange" id="prHigh" value="highend" class="chip-option">
+          <label for="prHigh" class="chip-label">💎 High-End</label>
+        </div>
+      </div>
+
+      <div class="form-section-title">Features</div>
+
+      <div class="form-group" style="display:flex;flex-direction:column;gap:10px">
+        <div class="toggle-row" onclick="toggleSwitch('advBooking')">
+          <div class="toggle-info">
+            <div class="toggle-name">Advance Booking</div>
+            <div class="toggle-hint">Allow customers to reserve tables in advance</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="advBooking" onchange="event.stopPropagation()">
+            <div class="switch-track"></div>
+          </label>
+        </div>
+        <div class="toggle-row" onclick="toggleSwitch('openNow')">
+          <div class="toggle-info">
+            <div class="toggle-name">Currently Open</div>
+            <div class="toggle-hint">Mark your restaurant as open for business</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="openNow" onchange="event.stopPropagation()" checked>
+            <div class="switch-track"></div>
+          </label>
+        </div>
+        <div class="toggle-row" onclick="toggleSwitch('homeDeliv')">
+          <div class="toggle-info">
+            <div class="toggle-name">Home Delivery</div>
+            <div class="toggle-hint">Offer delivery to customers' homes</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="homeDeliv" onchange="event.stopPropagation()">
+            <div class="switch-track"></div>
+          </label>
+        </div>
+        <div class="form-section-title">Operating Hours</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="openTime">Opening Time *</label>
+            <input type="time" id="openTime" value="09:00">
+            <div class="err-msg" id="errOpenTime">Required</div>
+          </div>
+          <div class="form-group">
+            <label for="closeTime">Closing Time *</label>
+            <input type="time" id="closeTime" value="22:00">
+            <div class="err-msg" id="errCloseTime">Required</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Open On</label>
+          <div class="chips-wrap">
+            <input type="checkbox" id="dMon" value="Mon" class="chip-option" checked>
+            <label for="dMon" class="chip-label">Mon</label>
+            <input type="checkbox" id="dTue" value="Tue" class="chip-option" checked>
+            <label for="dTue" class="chip-label">Tue</label>
+            <input type="checkbox" id="dWed" value="Wed" class="chip-option" checked>
+            <label for="dWed" class="chip-label">Wed</label>
+            <input type="checkbox" id="dThu" value="Thu" class="chip-option" checked>
+            <label for="dThu" class="chip-label">Thu</label>
+            <input type="checkbox" id="dFri" value="Fri" class="chip-option" checked>
+            <label for="dFri" class="chip-label">Fri</label>
+            <input type="checkbox" id="dSat" value="Sat" class="chip-option" checked>
+            <label for="dSat" class="chip-label">Sat</label>
+            <input type="checkbox" id="dSun" value="Sun" class="chip-option">
+            <label for="dSun" class="chip-label">Sun</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="ownerSubmitBtn" onclick="submitOwner()">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">🏪 Register Restaurant →</span>
+      </button>
+    </div>
+
+    <!-- ─── CUSTOMER FORM ─── -->
+    <div id="customerForm" style="display:none">
+      <div class="form-heading">Join as a Customer</div>
+      <div class="form-sub">Create your account and discover amazing restaurants near you.</div>
+
+      <div class="form-section-title">Your Details</div>
+
+      <div class="form-group">
+        <label for="custName">Full Name *</label>
+        <input type="text" id="custName" placeholder="Your name" maxlength="60">
+        <div class="err-msg" id="errCustName">Please enter your name</div>
+      </div>
+
+      <div class="form-group">
+        <label for="custEmail">Email Address *</label>
+        <input type="email" id="custEmail" placeholder="you@email.com" maxlength="80">
+        <div class="err-msg" id="errCustEmail">Enter a valid email address</div>
+      </div>
+
+      <div class="form-group">
+        <label for="custPhone">Phone Number *</label>
+        <input type="tel" id="custPhone" placeholder="+91 98765 43210" maxlength="15">
+        <div class="err-msg" id="errCustPhone">Enter a valid phone number</div>
+      </div>
+
+      <div class="form-group">
+        <label for="custCity">Your City *</label>
+        <input type="text" id="custCity" placeholder="e.g. Mysuru, Bengaluru…" maxlength="60">
+        <div class="err-msg" id="errCustCity">Please enter your city</div>
+      </div>
+
+      <div class="form-section-title">Food Preferences</div>
+
+      <div class="form-group">
+        <label>I prefer</label>
+        <div class="chips-wrap">
+          <input type="radio" name="custPref" id="cpVeg" value="veg" class="chip-option" checked>
+          <label for="cpVeg" class="chip-label">🥦 Vegetarian</label>
+          <input type="radio" name="custPref" id="cpNonVeg" value="nonveg" class="chip-option">
+          <label for="cpNonVeg" class="chip-label">🍗 Non-Veg</label>
+          <input type="radio" name="custPref" id="cpBoth" value="both" class="chip-option">
+          <label for="cpBoth" class="chip-label">🌿 No Preference</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>I usually dine</label>
+        <div class="chips-wrap">
+          <input type="radio" name="custDine" id="cdFamily" value="family" class="chip-option" checked>
+          <label for="cdFamily" class="chip-label">👨‍👩‍👧 With Family</label>
+          <input type="radio" name="custDine" id="cdFriends" value="friends" class="chip-option">
+          <label for="cdFriends" class="chip-label">👯 With Friends</label>
+          <input type="radio" name="custDine" id="cdSolo" value="solo" class="chip-option">
+          <label for="cdSolo" class="chip-label">🧍 Solo</label>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="custSubmitBtn" onclick="submitCustomer()">
+        <div class="btn-spinner"></div>
+        <span class="btn-text">🍽️ Create My Account →</span>
+      </button>
+    </div>
+
+    <!-- ─── LOGIN FORM ─── -->
+    <div id="loginForm" style="display:none">
+      <div class="form-heading">Welcome Back</div>
+      <div class="form-sub">Sign in with your Google account to continue.</div>
+
+      <div class="form-section-title">I am a</div>
+      <div class="form-group">
+        <div class="chips-wrap">
+          <input type="radio" name="loginRole" id="lrOwner" value="owner" class="chip-option" checked>
+          <label for="lrOwner" class="chip-label">🏪 Restaurant Owner</label>
+          <input type="radio" name="loginRole" id="lrCustomer" value="customer" class="chip-option">
+          <label for="lrCustomer" class="chip-label">🍽️ Customer</label>
+        </div>
+      </div>
+
+      <div class="login-card">
+        <!-- Role-specific context note -->
+        <div class="login-role-note" id="loginRoleNote">
+          <strong>Restaurant Owner?</strong> Sign in with the Google account linked to your registered email address.
+        </div>
+
+        <!-- Google Sign-In Button -->
+        <button class="btn-google" id="loginGoogleBtn" onclick="submitLogin()">
+          <!-- Google "G" SVG logo -->
+          <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          <div class="btn-spinner"></div>
+          <span class="btn-text">Continue with Google</span>
+        </button>
+
+        <div class="login-card-note">
+          We'll look up your account using your Google email. No password needed.
+        </div>
+      </div>
+
+      <p style="text-align:center;margin-top:18px;font-size:0.72rem;color:var(--muted);font-family:'Montserrat',sans-serif;font-weight:500;">
+        Don't have an account?
+        <span onclick="selectRole('owner')" style="color:var(--saffron);cursor:pointer;font-weight:700;">Register here →</span>
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  Made with ❤️ in <em>IIT Guwahati</em> · FoodNest © 2025
+</footer>
+
+</div><!-- /page -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── ROLE SELECTION ──
+function openGetStarted() {
+  document.getElementById('gsBackdrop').classList.add('open');
+  document.getElementById('gsMenu').classList.add('open');
+}
+function closeGetStarted() {
+  document.getElementById('gsBackdrop').classList.remove('open');
+  document.getElementById('gsMenu').classList.remove('open');
+}
+
+function selectRole(role) {
+  closeGetStarted();
+  currentRole = role;
+  document.getElementById('ownerForm').style.display = role === 'owner' ? 'block' : 'none';
+  document.getElementById('customerForm').style.display = role === 'customer' ? 'block' : 'none';
+  document.getElementById('loginForm').style.display = role === 'login' ? 'block' : 'none';
+  document.getElementById('successScreen').classList.remove('show');
+  setTimeout(() => {
+    document.getElementById('formSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+// ── UPDATE LOGIN ROLE NOTE ──
+document.addEventListener('change', function(e) {
+  if (e.target.name === 'loginRole') {
+    const note = document.getElementById('loginRoleNote');
+    if (e.target.value === 'owner') {
+      note.innerHTML = '<strong>Restaurant Owner?</strong> Sign in with the Google account linked to your registered email address.';
+    } else {
+      note.innerHTML = '<strong>Customer?</strong> Sign in with the Google account you used when creating your FoodNest account.';
+    }
+  }
+});
+
+// ── TOGGLE SWITCH ──
+function toggleSwitch(id) {
+  const el = document.getElementById(id);
+  el.checked = !el.checked;
+}
+
+// ── TOAST ──
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => { t.className = 'toast' + (type ? ' ' + type : ''); }, 3200);
+}
+
+// ── VALIDATION HELPERS ──
+function setErr(fieldId, errId, show) {
+  const f = document.getElementById(fieldId);
+  const e = document.getElementById(errId);
+  if (show) { f.classList.add('error'); e.classList.add('show'); }
+  else { f.classList.remove('error'); e.classList.remove('show'); }
+  return !show;
+}
+function isEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()); }
+function isPhone(v) { return /^[+\d\s\-]{7,15}$/.test(v.trim()); }
+
+// ── SHOW SUCCESS ──
+function showSuccess(icon, title, desc, id) {
+  document.getElementById('ownerForm').style.display = 'none';
+  document.getElementById('customerForm').style.display = 'none';
+  const ss = document.getElementById('successScreen');
+  document.getElementById('successIcon').textContent = icon;
+  document.getElementById('successTitle').textContent = title;
+  document.getElementById('successDesc').textContent = desc;
+  document.getElementById('successId').textContent = '🔑 ID: ' + id;
+  ss.classList.add('show');
+  ss.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── OWNER SUBMIT ──
+async function submitOwner() {
+  const btn = document.getElementById('ownerSubmitBtn');
+  const restName = document.getElementById('restName').value;
+  const ownerName = document.getElementById('ownerName').value;
+  const ownerPhone = document.getElementById('ownerPhone').value;
+  const ownerEmail = document.getElementById('ownerEmail').value;
+  const restLocation = document.getElementById('restLocation').value;
+
+  let valid = true;
+  valid = setErr('restName','errRestName', !restName.trim()) && valid;
+  valid = setErr('ownerName','errOwnerName', !ownerName.trim()) && valid;
+  valid = setErr('ownerPhone','errOwnerPhone', !isPhone(ownerPhone)) && valid;
+  if (ownerEmail.trim()) valid = setErr('ownerEmail','errOwnerEmail', !isEmail(ownerEmail)) && valid;
+  valid = setErr('restLocation','errRestLocation', !restLocation.trim()) && valid;
+
+  const openTime  = document.getElementById('openTime').value;
+  const closeTime = document.getElementById('closeTime').value;
+  valid = setErr('openTime',  'errOpenTime',  !openTime)  && valid;
+  valid = setErr('closeTime', 'errCloseTime', !closeTime) && valid;
+
+  const openDays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+    .filter(d => document.getElementById('d' + d).checked);
+
+  if (!valid) { showToast('Please fill in all required fields', 'red'); return; }
+
+  const foodType = document.querySelector('input[name="foodType"]:checked').value;
+  const restType = document.querySelector('input[name="restType"]:checked').value;
+  const priceRange = document.querySelector('input[name="priceRange"]:checked').value;
+  const advBooking = document.getElementById('advBooking').checked;
+  const openNow = document.getElementById('openNow').checked;
+  const homeDeliv = document.getElementById('homeDeliv').checked;
+
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    const db = window.__db;
+    const col = window.__fsCollection;
+    const addDoc = window.__fsAddDoc;
+    const ts = window.__fsTimestamp;
+
+    if (!db) throw new Error('Firebase not ready');
+
+    const docRef = await addDoc(col(db, 'restaurants'), {
+      restaurantName: restName.trim(),
+      ownerName: ownerName.trim(),
+      ownerPhone: ownerPhone.trim(),
+      ownerEmail: ownerEmail.trim() || null,
+      location: restLocation.trim(),
+      foodType, restType, priceRange,
+      advanceBooking: advBooking,
+      isOpen: openNow,
+      openTime, closeTime, openDays,
+      homeDelivery: homeDeliv,
+      status: 'pending_review',
+      createdAt: ts()
+    });
+
+    btn.classList.remove('loading'); btn.disabled = false;
+    showToast('🎉 Restaurant registered successfully!', 'green');
+    const slug = restName.trim().toLowerCase()
+  .replace(/\s+/g, '-')
+  .replace(/[^a-z0-9-]/g, '') || 'restaurant';
+    const city = document.getElementById('restLocation').value.trim()
+      .split(',').pop().trim().toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '') || 'india';
+
+    // Save slug + docId to sessionStorage so owner.html can pick it up
+    sessionStorage.setItem('fn_user', JSON.stringify({
+      id: docRef.id,
+      role: 'owner',
+      name: restName.trim(),
+      slug,
+      city
+    }));
+
+    setTimeout(() => {
+      window.location.href = `/${city}/${slug}/owner.html`;
+    }, 2000);
+  } catch (err) {
+    btn.classList.remove('loading'); btn.disabled = false;
+    console.error(err);
+    showToast('❌ Something went wrong. Please try again.', 'red');
+  }
+}
+
+// ── CUSTOMER SUBMIT ──
+async function submitCustomer() {
+  const btn = document.getElementById('custSubmitBtn');
+  const custName = document.getElementById('custName').value;
+  const custEmail = document.getElementById('custEmail').value;
+  const custPhone = document.getElementById('custPhone').value;
+  const custCity = document.getElementById('custCity').value;
+
+  let valid = true;
+  valid = setErr('custName','errCustName', !custName.trim()) && valid;
+  valid = setErr('custEmail','errCustEmail', !isEmail(custEmail)) && valid;
+  valid = setErr('custPhone','errCustPhone', !isPhone(custPhone)) && valid;
+  valid = setErr('custCity','errCustCity', !custCity.trim()) && valid;
+  if (!valid) { showToast('Please fill in all required fields', 'red'); return; }
+
+  const preference = document.querySelector('input[name="custPref"]:checked').value;
+  const diningStyle = document.querySelector('input[name="custDine"]:checked').value;
+
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    const db = window.__db;
+    const col = window.__fsCollection;
+    const addDoc = window.__fsAddDoc;
+    const ts = window.__fsTimestamp;
+
+    if (!db) throw new Error('Firebase not ready');
+
+    const docRef = await addDoc(col(db, 'customers'), {
+      name: custName.trim(),
+      email: custEmail.trim().toLowerCase(),
+      phone: custPhone.trim(),
+      city: custCity.trim(),
+      foodPreference: preference,
+      diningStyle,
+      createdAt: ts()
+    });
+
+    btn.classList.remove('loading'); btn.disabled = false;
+    showToast('🎉 Welcome to FoodNest!', 'green');
+    sessionStorage.setItem('fn_user', JSON.stringify({
+      id: docRef.id,
+      role: 'customer',
+      name: custName.trim(),
+      email: custEmail.trim().toLowerCase(),
+    }));
+    const slug = custName.trim().toLowerCase()
+  .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'customer';
+    showSuccess('🍽️', 'Welcome Aboard!',
+      'Taking you to your dashboard…',
+      docRef.id.slice(0, 12).toUpperCase()
+    );
+    setTimeout(() => {
+      window.location.href = `/${slug}/customer.html`;
+    }, 1500);
+  } catch (err) {
+    btn.classList.remove('loading'); btn.disabled = false;
+    console.error(err);
+    showToast('❌ Something went wrong. Please try again.', 'red');
+  }
+}
+
+// ── LOGIN SUBMIT (Google only) ──
+async function submitLogin() {
+  const btn = document.getElementById('loginGoogleBtn');
+  const role = document.querySelector('input[name="loginRole"]:checked').value;
+
+  btn.classList.add('loading'); btn.disabled = true;
+
+  // Save role to sessionStorage so we can retrieve it after redirect
+  sessionStorage.setItem('fn_pending_login_role', role);
+
+  try {
+    let result;
+    try {
+      // Try popup first (works on localhost and some browsers)
+      result = await window.__googleSignIn();
+    } catch (popupErr) {
+      if (
+        popupErr.code === 'auth/popup-blocked' ||
+        popupErr.code === 'auth/popup-closed-by-user'
+      ) {
+        // Fall back to redirect (best for Vercel/production)
+        await window.__googleSignInRedirect();
+        // Page will reload — execution stops here
+        return;
+      }
+      throw popupErr;
+    }
+
+    await handleLoginResult(result, role, btn);
+
+  } catch (err) {
+    btn.classList.remove('loading'); btn.disabled = false;
+    if (err.code === 'auth/cancelled-popup-request') {
+      showToast('Sign-in cancelled.', '');
+    } else {
+      console.error(err);
+      showToast('❌ Something went wrong. Please try again.', 'red');
+    }
+  }
+}
+
+async function handleLoginResult(result, role, btn) {
+  if (!result || !result.user) return;
+
+  const gUser = result.user;
+  const email = gUser.email.toLowerCase();
+
+  const db = window.__db;
+  const collection = window.__fsCollection;
+  const q = window.__fsQuery;
+  const where = window.__fsWhere;
+  const getDocs = window.__fsGetDocs;
+
+  const col   = role === 'owner' ? 'restaurants' : 'customers';
+  const field = role === 'owner' ? 'ownerEmail'  : 'email';
+
+  const snap = await getDocs(q(collection(db, col), where(field, '==', email)));
+
+  if (snap.empty) {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+    showToast(
+      `❌ No ${role === 'owner' ? 'restaurant owner' : 'customer'} account found for ${email}. Please register first.`,
+      'red'
+    );
+    return;
+  }
+
+  const userData = snap.docs[0].data();
+  sessionStorage.setItem('fn_user', JSON.stringify({
+    id: snap.docs[0].id,
+    role,
+    name: role === 'owner' ? userData.ownerName : userData.name,
+    email,
+    photoURL: gUser.photoURL || null
+  }));
+
+  showToast('✅ Signed in! Redirecting…', 'green');
+
+  setTimeout(() => {
+    if (role === 'owner') {
+      const slug = userData.restaurantName.trim().toLowerCase()
+        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'restaurant';
+      const city = (userData.location || '').split(',').pop().trim().toLowerCase()
+        .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'india';
+      window.location.href = `/${city}/${slug}/owner.html`;
+    } else {
+      window.location.href = './customer.html';
+    }
+  }, 1200);
+}
+
+// ── CHECK FOR REDIRECT RESULT ON PAGE LOAD ──
+window.addEventListener('load', async () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    document.getElementById('page').classList.add('visible');
+  }, 1800);
+
+  // Handle Google redirect result
+  if (window.__getRedirectResult) {
+    try {
+      const result = await window.__getRedirectResult();
+      if (result && result.user) {
+        const role = sessionStorage.getItem('fn_pending_login_role') || 'owner';
+        sessionStorage.removeItem('fn_pending_login_role');
+        await handleLoginResult(result, role, null);
+      }
+    } catch (err) {
+      if (err.code !== 'auth/no-current-user') {
+        console.error('Redirect result error:', err);
+      }
+    }
+  }
+});
+
+// Clear error on input
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', () => {
+    el.classList.remove('error');
+    const errEl = document.getElementById('err' + el.id.charAt(0).toUpperCase() + el.id.slice(1));
+    if (errEl) errEl.classList.remove('show');
+  });
+});
+</script>
+</body>
+</html>

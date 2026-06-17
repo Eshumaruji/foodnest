@@ -830,7 +830,7 @@ let unsubKdsOrders=null, kdsOrdersCache=[], kdsTablesCache=[];
 
 // ── BOOT ──────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  const session   = JSON.parse(sessionStorage.getItem('as_user') || 'null');
+  const session   = JSON.parse(sessionStorage.getItem('fn_user') || 'null');
   const params    = new URLSearchParams(location.search);
   const tableParam= params.get('table');
   const restParam = params.get('rest');
@@ -928,7 +928,7 @@ function wireEvents() {
 
 // ── AUTH ──────────────────────────────────────────────────────
 function doLogout() {
-  sessionStorage.removeItem('as_user');
+  sessionStorage.removeItem('fn_user');
   [unsubOrders,unsubSessions,unsubBills,unsubBlocked].forEach(u => u && u());
   window.location.href = '/index.html';
 }

@@ -2178,7 +2178,7 @@ function custDishCardHtml(d,i) {
     <div class=\"dish-body\">
       <div class=\"dish-name\">${esc(d.name)}</div>
       <div class=\"dish-footer-row\"><div class=\"dish-price\">₹${d.price}</div><button class=\"add-btn\" data-detail-dish=\"${d.id}\">→</button></div>
-      ${d.cookTime?"<div style=\"font-size:0.6rem;color:var(--muted);margin-top:3px'">⏱ ${d.cookTime}</div>:''}
+      ${d.cookTime?"<div style=\"font-size:0.6rem;color:var(--muted);margin-top:3px'\">⏱ ${d.cookTime}</div>:''}
       <div style=\"font-size:0.74rem;letter-spacing:1px;margin-top:5px\" title=\"${likelihoodLabel(stars)}\">${renderStars(stars)}</div>
     </div>
   </div>";

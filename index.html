@@ -13,7 +13,8 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-
+  import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  
   const firebaseConfig = {
     apiKey: "AIzaSyDu6WAndsds6PNmTPe7Oq7kFr6-fl8sOe4",
     authDomain: "aahaarsaathi.firebaseapp.com",
@@ -47,6 +48,7 @@
   window.__getRedirectResult = async () => {
     return getRedirectResult(auth);
   };
+  window.__signOut = () => signOut(auth);
 </script>
 
 <style>
@@ -1210,6 +1212,8 @@ async function handleLoginResult(result, role, btn) {
 
   if (snap.empty) {
     if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+    // Sign out so state doesn't persist on reload
+    if (window.__signOut) await window.__signOut();
     showToast(
       `❌ No ${role === 'owner' ? 'restaurant owner' : 'customer'} account found for ${email}. Please register first.`,
       'red'
@@ -1218,6 +1222,7 @@ async function handleLoginResult(result, role, btn) {
   }
 
   const userData = snap.docs[0].data();
+
   sessionStorage.setItem('fn_user', JSON.stringify({
     id: snap.docs[0].id,
     role,
@@ -1226,14 +1231,12 @@ async function handleLoginResult(result, role, btn) {
     city: role === 'customer' ? (userData.city || null) : null,
     photoURL: gUser.photoURL || null
   }));
-  sessionStorage.setItem('fn_user', JSON.stringify({
-    id: docRef.id,
-    role: 'customer',
-    name: custName.trim(),
-    email: custEmail.trim().toLowerCase(),
-    city: custCity.trim(),
-  }));
+
   showToast('✅ Signed in! Redirecting…', 'green');
+
+  // Sign out of Firebase Auth BEFORE redirecting so the auth state
+  // doesn't cause index.html to re-run login logic on next load
+  if (window.__signOut) await window.__signOut();
 
   setTimeout(() => {
     if (role === 'owner') {
